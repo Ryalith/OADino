@@ -15,6 +15,9 @@ class VAE(nn.Module):
     def decode(self, z):
         raise NotImplementedError
 
+    def reparametrization(self, mean, var):
+        raise NotImplementedError
+
 
 # Simple VAE for testing, A UNet might be better for images
 class DenseVAE(VAE):
@@ -34,14 +37,27 @@ class DenseVAE(VAE):
             layers_d.append(Act())
         layers_d.append(nn.Linear(layer_dims[1], layer_dims[0]))
 
+        self.mean_layer = nn.Linear(layer_dims[-1], 2)
+        self.logvar_layer = nn.Linear(layer_dims[-1], 2)
+
         self.encoder = nn.Sequential(*layers_e)
         self.decoder = nn.Sequential(*layers_d)
 
     def forward(self, x):
-        return self.decoder(self.encoder(x))
+        mean, logvar = self.encode(x)
+        z = self.reparameterization(mean, logvar)
+        x_hat = self.decode(z)
+        return x_hat, mean, logvar
+
+    def reparameterization(self, mean, var):
+        epsilon = torch.randn_like(var).to(var.device)
+        z = mean + var * epsilon
+        return z
 
     def encode(self, x):
-        return self.encoder(x)
+        h = self.encoder(x)
+        mean, logvar = self.mean_layer(h), self.logvar_layer(h)
+        return mean, logvar
 
     def decode(self, z):
         return self.decoder(z)
@@ -99,8 +115,34 @@ class OADinoModel(nn.Module):
 
             return segmented_inputs, mask
 
-    def create_patches(self, inputs, mask):
-        # TODO create patches from input_pixel values and the model's patch size, with a given mask
+    def create_patches(self, inputs):
+        # TODO create patches from input_pixel values and the model's patch size
+        # A priori image size is 518*518
+        # A priori dinoV2 uses 14*14 patches
+
+        pixel_values = inputs.pixel_values  # (batch, 3, 518, 518)
+        batch_size, channels, height, width = pixel_values.shape
+
+        patch_size = 14  # DINOv2 patch size
+
+        # Calculate number of patches
+        num_patches_h = height // patch_size  # 518 // 14 = 37
+        num_patches_w = width // patch_size  # 518 // 14 = 37
+
+        # Reshape to extract patches
+        # (batch, 3, 224, 224) -> (batch, 3, 37, 14, 37, 14)
+        patches = pixel_values.reshape(
+            batch_size, channels, num_patches_h, patch_size, num_patches_w, patch_size
+        )
+
+        # Rearrange dimensions: (batch, 3, 16, 14, 16, 14) -> (batch, 37, 37, 3, 14, 14)
+        patches = patches.permute(0, 2, 4, 1, 3, 5)
+
+        # Flatten patches: (batch, 16, 16, 3, 14, 14) -> (batch, 37*37, 588)
+        patches = patches.reshape(batch_size, num_patches_h * num_patches_w, -1)
+
+        return patches
+
         pass
 
     def forward(self, image, pca_q=None, pca_niter=2):
@@ -110,7 +152,7 @@ class OADinoModel(nn.Module):
         Notes:
         - Some reviews mention using other segmentation methods (like using UNets), we could add implementations ?
         """
-        segmented_inputs, mask = self._segment_image(image, pca_q, pca_niter)
+        segmented_inputs, mask = self.segment_image(image, pca_q, pca_niter)
 
         object_patches = self.create_patches(segmented_inputs)
 
