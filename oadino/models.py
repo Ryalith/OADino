@@ -3,6 +3,7 @@ from typing import Sequence
 import torch
 from torch import nn
 from transformers import PreTrainedModel
+from torchvision import transforms
 
 
 class VAE(nn.Module):
@@ -18,30 +19,87 @@ class VAE(nn.Module):
     def reparametrization(self, mean, var):
         raise NotImplementedError
 
+    def forward(self, x):
+        mean, logvar = self.encode(x)
+        z = self.reparameterization(mean, logvar)
+        x_hat = self.decode(z)
+        return x_hat, mean, logvar
 
-# Simple VAE for testing, A UNet might be better for images
-class DenseVAE(VAE):
-    def __int__(self, layer_dims: Sequence[int], Act=nn.ReLU):
+
+class ConvVAE16(VAE):
+    """Variationnal autoencoders encoding dino patches (14*14 a priori)
+    The paper uses 64*64 patches resized from 14*14 but not sure why they do it
+    This Small 16*16 VAE is used instead for faster testing
+    """
+
+    def __init__(self, latent_base=64, prior_dim=32):
+        """Latent dim will be latent_base*16"""
         super().__init__()
 
-        layers_e = []
-        layers_d = []
+        self.input_size = 16
+        self.latent_base = latent_base
+        self.latent_dim = latent_base * 16
+        self.prior_dim = prior_dim
 
-        for i in range(len(layer_dims) - 1):
-            layers_e.append(nn.Linear(layer_dims[i], layer_dims[i + 1]))
-            layers_e.append(Act())
-        layers_e.append(nn.Linear(layer_dims[-2], layer_dims[-1]))
+        # Encoder: 16x16 -> 8x8 -> 4x4 -> 2x2 -> flatten
+        self.encoder = nn.Sequential(
+            # Input: (batch, 3, 16, 16)
+            nn.Conv2d(
+                3, latent_base, kernel_size=3, stride=2, padding=1
+            ),  # -> (batch, lb, 8, 8)
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.Conv2d(
+                latent_base, latent_base * 2, kernel_size=3, stride=2, padding=1
+            ),  # -> (batch, 2lb, 4, 4)
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(
+                latent_base * 2, latent_base * 4, kernel_size=3, stride=2, padding=1
+            ),  # -> (batch, 4lb, 2, 2)
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+            nn.Flatten(),  # -> (batch, 4lb*2*2 = 16lb)
+        )
 
-        for i in reversed(range(len(layer_dims) - 1)):
-            layers_d.append(nn.Linear(layer_dims[i + 1], layer_dims[i]))
-            layers_d.append(Act())
-        layers_d.append(nn.Linear(layer_dims[1], layer_dims[0]))
+        # Mean and logvar layers for latent space
+        self.mean_layer = nn.Sequential(nn.Linear(128 * 2 * 2, prior_dim))
 
-        self.mean_layer = nn.Linear(layer_dims[-1], 2)
-        self.logvar_layer = nn.Linear(layer_dims[-1], 2)
+        self.logvar_layer = nn.Sequential(nn.Linear(128 * 2 * 2, prior_dim))
 
-        self.encoder = nn.Sequential(*layers_e)
-        self.decoder = nn.Sequential(*layers_d)
+        # Decoder: latent -> 2x2 -> 4x4 -> 8x8 -> 16x16
+        self.decoder = nn.Sequential(
+            nn.Linear(prior_dim, 16 * latent_base),
+            nn.ReLU(inplace=True),
+            nn.Unflatten(1, (latent_base * 4, 2, 2)),  # -> (batch, 4lb, 2, 2)
+            nn.ConvTranspose2d(
+                latent_base * 4, latent_base * 2, kernel_size=4, stride=2, padding=1
+            ),  # -> (batch, 2lb, 4, 4)
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.ConvTranspose2d(
+                latent_base * 2, latent_base, kernel_size=4, stride=2, padding=1
+            ),  # -> (batch, lb, 8, 8)
+            nn.BatchNorm2d(32),
+            nn.ReLU(inplace=True),
+            nn.ConvTranspose2d(
+                latent_base, 3, kernel_size=4, stride=2, padding=1
+            ),  # -> (batch, 3, 16, 16)
+            nn.Sigmoid(),  # Output in [0, 1] range
+        )
+
+    def encode(self, x):
+        h = self.encoder(x)
+        mean, logvar = self.mean_layer(h), self.logvar_layer(h)
+        return mean, logvar
+
+    def reparameterization(self, mean, var):
+        epsilon = torch.randn_like(var).to(var.device)
+        z = mean + var * epsilon
+        return z
+
+    def decode(self, x):
+        return self.decoder(x)
 
     def forward(self, x):
         mean, logvar = self.encode(x)
@@ -49,44 +107,23 @@ class DenseVAE(VAE):
         x_hat = self.decode(z)
         return x_hat, mean, logvar
 
-    def reparameterization(self, mean, var):
-        epsilon = torch.randn_like(var).to(var.device)
-        z = mean + var * epsilon
-        return z
 
-    def encode(self, x):
-        h = self.encoder(x)
-        mean, logvar = self.mean_layer(h), self.logvar_layer(h)
-        return mean, logvar
-
-    def decode(self, z):
-        return self.decoder(z)
-
-
-# First implementation of the Oh-A-Dino model
-# The idea is to, during training:
-# - call segment_image to get segmented inputs for the rest of the model and the mask
-# - call create_patches to create a set of patches
-# - call encode_decode_patches to get the latent and reconstructed patches
-# - compute the paper's vae encoder loss and backprop
-class OADinoModel(nn.Module):
-    def __init__(self, processor, backbone: PreTrainedModel, vae: VAE):
+class OADinoPreProcessor:
+    def __init__(self, processor, backbone: PreTrainedModel):
         super().__init__()
         self.processor = processor
         self.backbone = backbone
-        self.vae = vae
-        pass
 
     @staticmethod
-    def _get_mask(self, flat_patches, pca_q, pca_niter):
+    def get_mask(self, flat_patches, pca_q, pca_niter):
         flattened_patches_centered = flat_patches - flat_patches.mean(dim=0)
         U, S, V = torch.pca_lowrank(flattened_patches_centered, pca_q, False, pca_niter)
         patch_pca = torch.matmul(flattened_patches_centered, V[:, 0])
         return patch_pca > patch_pca.median()
 
-    def segment_image(self, image, pca_q, pca_niter):
+    def segment_images(self, images, pca_q, pca_niter):
         with torch.no_grad():
-            inputs = self.processor(images=image, return_tensors="pt")
+            inputs = self.processor(images=images, return_tensors="pt")
             outputs = self.backbone(**inputs)
 
             # (batch_size, 1+n_patches, hidden_size)
@@ -94,36 +131,41 @@ class OADinoModel(nn.Module):
             backbone_patches = backbone_lhs[:, 1:, :]
 
             batch_size, n_patches, hidden_size = backbone_lhs.shape
+            _, _, height, width = input.pixel_values.shape
+            patch_size = self.backbone.config.patch_size  # DINOv2 patch size 14
             n_patches -= 1
 
             # 1. Foreground separation of patches
 
             flattened_patches = backbone_patches.reshape((-1, hidden_size))
-            rough_mask = self._get_mask(flattened_patches, pca_q, pca_niter)
+            rough_mask = self.get_mask(flattened_patches, pca_q, pca_niter)
 
             # 2. Refinig object consistency
 
             masked_patches = flattened_patches[rough_mask]
-            mask = self._get_mask(masked_patches, pca_q, pca_niter)
+            mask = self.get_mask(masked_patches, pca_q, pca_niter)
 
             # 3. Remapping to image space
 
-            pixel_mask = mask.reshape(batch_size, n_patches, 1)
-            pixel_mask._expand(-1, -1, hidden_size)
+            pixel_mask = mask.reshape(
+                (batch_size, 1, n_patches // patch_size, 1, n_patches % patch_size, 1)
+            )
+            pixel_mask._expand((-1, 3, -1, patch_size, -1, patch_size))
+            pixel_mask.reshape((batch_size, n_patches, height, width))
             segmented_inputs = inputs
             segmented_inputs.pixel_values = inputs.pixel_values * pixel_mask
 
-            return segmented_inputs, mask
+            return segmented_inputs, mask.reshape(batch_size, n_patches)
 
     def create_patches(self, inputs):
-        # TODO create patches from input_pixel values and the model's patch size
-        # A priori image size is 518*518
+        # TODO create patches from input_pixel values, the model's patch size and masks
+        # A priori image size is 518*518 ?
         # A priori dinoV2 uses 14*14 patches
 
         pixel_values = inputs.pixel_values  # (batch, 3, 518, 518)
         batch_size, channels, height, width = pixel_values.shape
 
-        patch_size = 14  # DINOv2 patch size
+        patch_size = self.backbone.config.patch_size  # DINOv2 patch size 14
 
         # Calculate number of patches
         num_patches_h = height // patch_size  # 518 // 14 = 37
@@ -135,40 +177,84 @@ class OADinoModel(nn.Module):
             batch_size, channels, num_patches_h, patch_size, num_patches_w, patch_size
         )
 
-        # Rearrange dimensions: (batch, 3, 16, 14, 16, 14) -> (batch, 37, 37, 3, 14, 14)
+        # Rearrange dimensions: (batch, 3, 37, 14, 37, 14) -> (batch, 37, 37, 3, 14, 14)
         patches = patches.permute(0, 2, 4, 1, 3, 5)
 
-        # Flatten patches: (batch, 16, 16, 3, 14, 14) -> (batch, 37*37, 588)
-        patches = patches.reshape(batch_size, num_patches_h * num_patches_w, -1)
+        # Flatten patches: (batch, 37, 37, 3, 14, 14) -> (batch, 37*37, 3, 14, 14)
+        patches = patches.reshape(
+            batch_size, num_patches_h * num_patches_w, 3, patch_size, patch_size
+        )
 
         return patches
 
-        pass
+    def get_global_features_and_patches(self, images, pca_q, pca_niter):
+        segmented_inputs, mask = self.segment_images(images)
+        object_patches = self.create_patches(segmented_inputs)
+        global_features = self.backbone(segmented_inputs).last_hidden_state[:, 0, :]
 
-    def forward(self, image, pca_q=None, pca_niter=2):
-        """
-        Perform feature extraction on image patches (masked through PCA) using the model's VAE
+        return global_features, object_patches, mask
 
+
+# First implementation of the Oh-A-Dino model
+# The idea is to, during training:
+# - call segment_image to get segmented inputs for the rest of the model and the mask
+# - call create_patches to create a set of patches
+# - call encode_decode_patches to get the latent and reconstructed patches
+# - compute the paper's vae encoder loss and backprop
+class OADinoModel(nn.Module):
+    def __init__(self, vae: VAE):
+        super().__init__()
+        self.vae = vae
+        self.transform = transforms.Resize(self.vae.input_size)
+
+    def get_features(self, global_features, object_patches, mask):
+        """Create OADino features from global_features (dino on masked input) and patches
         Notes:
         - Some reviews mention using other segmentation methods (like using UNets), we could add implementations ?
         """
-        segmented_inputs, mask = self.segment_image(image, pca_q, pca_niter)
+        masked_object_patches = object_patches[mask]
+        masked_object_patches = self.transform(masked_object_patches)
+        object_features, _ = self.vae.encode(masked_object_patches)
 
-        object_patches = self.create_patches(segmented_inputs)
+        dino_features = []
+        feature_idx = 0  # Track position in flattened object_features
 
-        # Get local representation: encoded patches
-        encoded_patches = self.vae.encode(object_patches)
+        for idx in range(mask.shape[0]):
+            # Count non-masked patches for this batch element
+            n_not_masked = mask[idx].sum().item()
 
-        # Get global representation: cls token on segmented image
-        outputs = self.backbone(**segmented_inputs)
-        cls_token = outputs.last_hidden_state[:, 0, :].unsqueeze(1)
-        cls_token._expand(-1, encoded_patches.shape[1], -1)
-        full_features = torch.cat([cls_token, encoded_patches], dim=1)
+            if n_not_masked > 0:
+                # Get global feature for this batch element: shape (ng,)
+                global_feature = global_features[idx]  # shape: (ng,)
 
-        return full_features
+                # Get corresponding local features: shape (n_not_masked, nl)
+                local_features = object_features[
+                    feature_idx : feature_idx + n_not_masked
+                ]  # shape: (n_not_masked, nl)
 
-    def encode_decode_patches(self, patches):
-        encoded_patches = self.vae.encode(patches)
-        decoded_patches = self.vae.decode(encoded_patches)
+                # Expand global feature to match: shape (n_not_masked, ng)
+                global_expanded = global_feature.unsqueeze(0).expand(n_not_masked, -1)
 
-        return encoded_patches, decoded_patches
+                # Concatenate: shape (n_not_masked, ng+nl)
+                combined = torch.cat([global_expanded, local_features], dim=-1)
+
+                dino_features.append(combined)
+                feature_idx += n_not_masked
+            else:
+                # No non-masked patches for this batch element
+                # Return empty tensor with correct shape (0, ng+nl)
+                empty = torch.empty(
+                    0,
+                    global_features.shape[1] + object_features.shape[1],
+                    device=global_features.device,
+                    dtype=global_features.dtype,
+                )
+                dino_features.append(empty)
+
+        return dino_features
+
+    def encode_decode_object_patches(self, object_patches, mask):
+        """Take object_patches and a mask and return"""
+        masked_object_patches = object_patches[mask]
+        masked_object_patches = self.transform(masked_object_patches)
+        return self.vae(masked_object_patches)
