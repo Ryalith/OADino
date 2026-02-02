@@ -108,7 +108,7 @@ class ConvVAE16(VAE):
         return x_hat, mean, logvar
 
 
-class OADinoPreProcessor:
+class OADinoPreProcessor(nn.Module):
     def __init__(self, processor, backbone: PreTrainedModel):
         super().__init__()
         self.processor = processor
@@ -158,10 +158,6 @@ class OADinoPreProcessor:
             return segmented_inputs, mask.reshape(batch_size, n_patches)
 
     def create_patches(self, inputs):
-        # TODO create patches from input_pixel values, the model's patch size and masks
-        # A priori image size is 518*518 ?
-        # A priori dinoV2 uses 14*14 patches
-
         pixel_values = inputs.pixel_values  # (batch, 3, 518, 518)
         batch_size, channels, height, width = pixel_values.shape
 
@@ -188,6 +184,12 @@ class OADinoPreProcessor:
         return patches
 
     def get_global_features_and_patches(self, images, pca_q, pca_niter):
+        """Create global features, divide image into patches, and mask non object related patches
+        returns:
+        global_features:    (batch_size, feature_size_backbone)
+        object_patches:     (batch_size, n_patches, n_channels, patch_size, patch_size)
+        mask:               (batch_size, n_patches)
+        """
         segmented_inputs, mask = self.segment_images(images)
         object_patches = self.create_patches(segmented_inputs)
         global_features = self.backbone(segmented_inputs).last_hidden_state[:, 0, :]
@@ -207,7 +209,9 @@ class OADinoModel(nn.Module):
         self.vae = vae
         self.transform = transforms.Resize(self.vae.input_size)
 
-    def get_features(self, global_features, object_patches, mask):
+    def get_features(
+        self, global_features, object_patches, mask
+    ) -> Sequence[torch.tensor]:
         """Create OADino features from global_features (dino on masked input) and patches
         Notes:
         - Some reviews mention using other segmentation methods (like using UNets), we could add implementations ?
@@ -216,7 +220,7 @@ class OADinoModel(nn.Module):
         masked_object_patches = self.transform(masked_object_patches)
         object_features, _ = self.vae.encode(masked_object_patches)
 
-        dino_features = []
+        oadino_features = []
         feature_idx = 0  # Track position in flattened object_features
 
         for idx in range(mask.shape[0]):
@@ -238,7 +242,7 @@ class OADinoModel(nn.Module):
                 # Concatenate: shape (n_not_masked, ng+nl)
                 combined = torch.cat([global_expanded, local_features], dim=-1)
 
-                dino_features.append(combined)
+                oadino_features.append(combined)
                 feature_idx += n_not_masked
             else:
                 # No non-masked patches for this batch element
@@ -249,9 +253,9 @@ class OADinoModel(nn.Module):
                     device=global_features.device,
                     dtype=global_features.dtype,
                 )
-                dino_features.append(empty)
+                oadino_features.append(empty)
 
-        return dino_features
+        return oadino_features
 
     def encode_decode_object_patches(self, object_patches, mask):
         """Take object_patches and a mask and return"""
