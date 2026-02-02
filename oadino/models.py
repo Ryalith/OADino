@@ -47,25 +47,24 @@ class ConvVAE16(VAE):
             nn.Conv2d(
                 3, latent_base, kernel_size=3, stride=2, padding=1
             ),  # -> (batch, lb, 8, 8)
-            nn.BatchNorm2d(32),
+            nn.BatchNorm2d(latent_base),
             nn.ReLU(),
             nn.Conv2d(
                 latent_base, latent_base * 2, kernel_size=3, stride=2, padding=1
             ),  # -> (batch, 2lb, 4, 4)
-            nn.BatchNorm2d(64),
+            nn.BatchNorm2d(latent_base * 2),
             nn.ReLU(),
             nn.Conv2d(
                 latent_base * 2, latent_base * 4, kernel_size=3, stride=2, padding=1
             ),  # -> (batch, 4lb, 2, 2)
-            nn.BatchNorm2d(128),
+            nn.BatchNorm2d(latent_base * 4),
             nn.ReLU(),
             nn.Flatten(),  # -> (batch, 4lb*2*2 = 16lb)
         )
 
         # Mean and logvar layers for latent space
-        self.mean_layer = nn.Sequential(nn.Linear(128 * 2 * 2, prior_dim))
-
-        self.logvar_layer = nn.Sequential(nn.Linear(128 * 2 * 2, prior_dim))
+        self.mean_layer = nn.Sequential(nn.Linear(latent_base * 4 * 2 * 2, prior_dim))
+        self.logvar_layer = nn.Sequential(nn.Linear(latent_base * 4 * 2 * 2, prior_dim))
 
         # Decoder: latent -> 2x2 -> 4x4 -> 8x8 -> 16x16
         self.decoder = nn.Sequential(
@@ -75,12 +74,12 @@ class ConvVAE16(VAE):
             nn.ConvTranspose2d(
                 latent_base * 4, latent_base * 2, kernel_size=4, stride=2, padding=1
             ),  # -> (batch, 2lb, 4, 4)
-            nn.BatchNorm2d(64),
+            nn.BatchNorm2d(latent_base * 2),
             nn.ReLU(inplace=True),
             nn.ConvTranspose2d(
                 latent_base * 2, latent_base, kernel_size=4, stride=2, padding=1
             ),  # -> (batch, lb, 8, 8)
-            nn.BatchNorm2d(32),
+            nn.BatchNorm2d(latent_base),
             nn.ReLU(inplace=True),
             nn.ConvTranspose2d(
                 latent_base, 3, kernel_size=4, stride=2, padding=1
@@ -115,7 +114,7 @@ class OADinoPreProcessor(nn.Module):
         self.backbone = backbone
 
     @staticmethod
-    def get_mask(self, flat_patches, pca_q, pca_niter):
+    def get_mask(flat_patches, pca_q, pca_niter):
         flattened_patches_centered = flat_patches - flat_patches.mean(dim=0)
         U, S, V = torch.pca_lowrank(flattened_patches_centered, pca_q, False, pca_niter)
         patch_pca = torch.matmul(flattened_patches_centered, V[:, 0])
@@ -131,7 +130,7 @@ class OADinoPreProcessor(nn.Module):
             backbone_patches = backbone_lhs[:, 1:, :]
 
             batch_size, n_patches, hidden_size = backbone_lhs.shape
-            _, _, height, width = input.pixel_values.shape
+            _, _, height, width = inputs.pixel_values.shape
             patch_size = self.backbone.config.patch_size  # DINOv2 patch size 14
             n_patches -= 1
 
@@ -142,16 +141,16 @@ class OADinoPreProcessor(nn.Module):
 
             # 2. Refinig object consistency
 
-            masked_patches = flattened_patches[rough_mask]
+            masked_patches = flattened_patches * rough_mask[:, None]
             mask = self.get_mask(masked_patches, pca_q, pca_niter)
 
             # 3. Remapping to image space
 
             pixel_mask = mask.reshape(
-                (batch_size, 1, n_patches // patch_size, 1, n_patches % patch_size, 1)
+                (batch_size, 1, height // patch_size, 1, width // patch_size, 1)
             )
-            pixel_mask._expand((-1, 3, -1, patch_size, -1, patch_size))
-            pixel_mask.reshape((batch_size, n_patches, height, width))
+            pixel_mask = pixel_mask.expand((-1, 3, -1, patch_size, -1, patch_size))
+            pixel_mask = pixel_mask.reshape((batch_size, 3, height, width))
             segmented_inputs = inputs
             segmented_inputs.pixel_values = inputs.pixel_values * pixel_mask
 
@@ -192,9 +191,9 @@ class OADinoPreProcessor(nn.Module):
         object_patches:     (batch_size, n_patches, n_channels, patch_size, patch_size)
         mask:               (batch_size, n_patches)
         """
-        segmented_inputs, mask = self.segment_images(images)
+        segmented_inputs, mask = self.segment_images(images, pca_q, pca_niter)
         object_patches = self.create_patches(segmented_inputs)
-        global_features = self.backbone(segmented_inputs).last_hidden_state[:, 0, :]
+        global_features = self.backbone(**segmented_inputs).last_hidden_state[:, 0, :]
 
         return global_features, object_patches, mask
 

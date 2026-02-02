@@ -8,7 +8,9 @@ dependencies = [
   "torch>=2.9.1",
   "torchvision>=0.24.1",
   "transformers>=4.57.3",
-  "datasets>=4.5.0"
+  "datasets>=4.5.0",
+  "tqdm>=4.67.1",
+  "tensorboard>=2.20.0"
 ]
 
 [tool.uv.sources]

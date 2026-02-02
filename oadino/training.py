@@ -1,10 +1,13 @@
 import json
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 import torch
-import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
+from torch.utils.tensorboard import SummaryWriter
+from torchvision.transforms import Resize
+from tqdm import tqdm
 
 from .models import OADinoModel, OADinoPreProcessor
 
@@ -161,7 +164,6 @@ class PreProcessedTensorStorage(Dataset):
 def get_preprocessed_data(
     dataset,
     dataset_name,
-    image_transform,
     image_size,
     preprocessor,
     base_dir,
@@ -184,18 +186,15 @@ def get_preprocessed_data(
     return preprocess_and_save_dataset(
         dataloader,
         dataset_name,
-        image_transform,
         image_size,
         preprocessor,
         base_dir,
-        batch_size,
     )
 
 
 def preprocess_and_save_dataset(
     dataloader,
     dataset_name: str,
-    image_transform,
     image_size,
     preprocessor: OADinoPreProcessor,
     base_dir: Path,
@@ -206,7 +205,6 @@ def preprocess_and_save_dataset(
     Args:
         dataloader: DataLoader providing batches of images
         dataset_name: Name of the dataset (e.g., 'imagenet', 'cifar10')
-        image_transform: Transform to apply to images
         image_size: Size of images after transformation
         preprocessor: OADinoPreProcessor instance
         base_dir: Base directory for saving preprocessed data
@@ -242,11 +240,19 @@ def preprocess_and_save_dataset(
     print(f"Saving to: {savedir}")
 
     samples_processed = 0
+
+    dl_pbar = tqdm(
+        dataloader,
+        desc="Batches",
+        position=0,
+        leave=True,
+    )
+
     with torch.no_grad():
-        for batch_idx, batch in enumerate(dataloader):
+        for batch_idx, batch in enumerate(dl_pbar):
             # Get preprocessed features
             feats, patches, masks = preprocessor.get_global_features_and_patches(
-                ..., pca_q=None, pca_niter=2
+                batch["image"], pca_q=None, pca_niter=2
             )
 
             # Add to storage
@@ -262,11 +268,75 @@ def preprocess_and_save_dataset(
     return preprocessed_tensor_storage
 
 
-def vae_loss(x, x_hat, mean, log_var, beta=1e-4):
-    reproduction_loss = nn.functional.binary_cross_entropy(x_hat, x, reduction="sum")
-    kld = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp())
-
-    return reproduction_loss + beta * kld
+# class Trainer:
+#     def __init__(
+#         self,
+#         preprocessor: OADinoPreProcessor,
+#         model: OADinoModel,
+#         dataset: Dataset,
+#         dataset_name: str,
+#         test_dataset: Dataset,
+#         image_size,
+#     ):
+#         self.preproc = preprocessor
+#         self.model = model
+#         self.dataset = dataset
+#         self.test_dataset = test_dataset
+#         self.dset_name = dataset_name
+#         self.img_size = image_size
+#
+#     def train(
+#         self,
+#         base_dir: Path,
+#         Optimizer=torch.optim.Adam,
+#         lr=1e-3,
+#         preproc_batch_size=64,
+#         train_batch_size=64,
+#         device=torch.device("cpu"),
+#         loss_beta=1e-4,
+#     ):
+#         """
+#         base_dir is where all data are saved by default
+#         please don't use a path within the git to not add too much data in it
+#         """
+#         self.preproc.to(device)
+#         self.preproc.eval()
+#
+#         preprocessed_dataset = get_preprocessed_data(
+#             self.dataset,
+#             self.dset_name,
+#             self.transform,
+#             self.img_size,
+#             self.preproc,
+#             base_dir,
+#             preproc_batch_size,
+#         )
+#
+#         # we delete the preproc to save RAM
+#         del self.preproc
+#
+#         self.model.to(device)
+#         self.model.train()
+#
+#         dataloader = DataLoader(preprocessed_dataset, batch_size=train_batch_size)
+#         optimizer = Optimizer(self.model.parameters(), lr=lr)
+#
+#         vae_in_size = self.model.vae.input_size
+#         transform = Resize(vae_in_size)
+#
+#         for batch_idx, batch in dataloader:
+#             patches = batch["patches"].to(device)
+#             masks = batch["masks"].to(device)
+#
+#             x_hat, mean, logvar = self.model.encode_decode_object_patches(
+#                 transform(patches), masks
+#             )
+#
+#             loss = vae_loss(patches, x_hat, mean, logvar, loss_beta)
+#
+#             optimizer.zero_grad()
+#             loss.backward()
+#             optimizer.step()
 
 
 class Trainer:
@@ -276,62 +346,443 @@ class Trainer:
         model: OADinoModel,
         dataset: Dataset,
         dataset_name: str,
-        image_transform,
+        test_dataset: Dataset,
         image_size,
+        transform=None,
     ):
         self.preproc = preprocessor
         self.model = model
         self.dataset = dataset
+        self.test_dataset = test_dataset
         self.dset_name = dataset_name
-        self.transform = image_transform
         self.img_size = image_size
+        self.patch_size = preprocessor.backbone.config.patch_size
+        self.transform = transform
 
     def train(
         self,
         base_dir: Path,
+        num_epochs=10,
         Optimizer=torch.optim.Adam,
         lr=1e-3,
         preproc_batch_size=64,
         train_batch_size=64,
+        test_batch_size=64,
         device=torch.device("cpu"),
         loss_beta=1e-4,
+        test_every_n_epochs=1,
+        save_every_n_epochs=1,
+        resume_from_checkpoint=None,
     ):
         """
-        base_dir is where all data are saved by default
-        please don't use a path within the git to not add too much data in it
+        Enhanced training loop with logging, checkpointing, and evaluation.
+
+        Args:
+            base_dir: Base directory for saving all data
+            num_epochs: Number of training epochs
+            Optimizer: Optimizer class (e.g., torch.optim.Adam)
+            lr: Learning rate
+            preproc_batch_size: Batch size for preprocessing
+            train_batch_size: Batch size for training
+            test_batch_size: Batch size for testing
+            device: Device to train on
+            loss_beta: Beta parameter for VAE loss
+            test_every_n_epochs: Run evaluation every N epochs
+            save_every_n_epochs: Save checkpoint every N epochs
+            resume_from_checkpoint: Path to checkpoint to resume from
         """
+        base_dir = Path(base_dir)
+
+        # Create directories for this run
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        model_name = self.model.__class__.__name__
+        run_name = f"{self.dset_name}_{timestamp}"
+        run_dir = base_dir / "runs" / run_name
+        checkpoints_dir = run_dir / "checkpoints"
+        logs_dir = run_dir / "logs"
+
+        run_dir.mkdir(parents=True, exist_ok=True)
+        checkpoints_dir.mkdir(exist_ok=True)
+        logs_dir.mkdir(exist_ok=True)
+
+        # Initialize TensorBoard writer
+        writer = SummaryWriter(log_dir=str(logs_dir))
+
+        # Save training configuration
+        config = {
+            "dataset_name": self.dset_name,
+            "model_name": model_name,
+            "num_epochs": num_epochs,
+            "learning_rate": lr,
+            "train_batch_size": train_batch_size,
+            "test_batch_size": test_batch_size,
+            "loss_beta": loss_beta,
+            "image_size": self.img_size,
+            "device": str(device),
+        }
+        with open(run_dir / "config.json", "w") as f:
+            json.dump(config, f, indent=2)
+
+        print(f"Run directory: {run_dir}")
+        print(f"Logs directory: {logs_dir}")
+        print(f"Checkpoints directory: {checkpoints_dir}")
+
+        # Preprocess datasets
+        print("\n" + "=" * 80)
+        print("PREPROCESSING TRAINING DATA")
+        print("=" * 80)
         self.preproc.to(device)
         self.preproc.eval()
 
-        preprocessed_dataset = get_preprocessed_data(
+        preprocessed_train_dataset = get_preprocessed_data(
             self.dataset,
             self.dset_name,
-            self.transform,
             self.img_size,
             self.preproc,
             base_dir,
             preproc_batch_size,
         )
 
-        # we delete the preproc to save RAM
-        del self.preproc
+        print("\n" + "=" * 80)
+        print("PREPROCESSING TEST DATA")
+        print("=" * 80)
 
+        preprocessed_test_dataset = get_preprocessed_data(
+            self.test_dataset,
+            f"{self.dset_name}_test",
+            self.img_size,
+            self.preproc,
+            base_dir,
+            preproc_batch_size,
+        )
+
+        # Delete preprocessor to save RAM
+        del self.preproc
+        torch.cuda.empty_cache() if torch.cuda.is_available() else None
+
+        # Setup model and optimizer
         self.model.to(device)
         self.model.train()
 
-        dataloader = DataLoader(preprocessed_dataset, batch_size=train_batch_size)
         optimizer = Optimizer(self.model.parameters(), lr=lr)
 
-        for batch_idx, batch in dataloader:
-            patches = batch["patches"].to(device)
-            masks = batch["masks"].to(device)
+        # Create dataloaders
+        train_dataloader = DataLoader(
+            preprocessed_train_dataset,
+            batch_size=train_batch_size,
+            shuffle=True,
+            num_workers=0,  # 0 for memory-mapped data
+            pin_memory=True if device.type == "cuda" else False,
+        )
 
-            x_hat, mean, logvar = self.model.encode_decode_object_patches(
-                patches, masks
+        test_dataloader = DataLoader(
+            preprocessed_test_dataset,
+            batch_size=test_batch_size,
+            shuffle=False,
+            num_workers=0,
+            pin_memory=True if device.type == "cuda" else False,
+        )
+
+        vae_in_size = self.model.vae.input_size
+        resize_transform = Resize((vae_in_size, vae_in_size))
+
+        # Resume from checkpoint if specified
+        start_epoch = 0
+        best_test_loss = float("inf")
+
+        if resume_from_checkpoint is not None:
+            checkpoint = torch.load(resume_from_checkpoint, map_location=device)
+            self.model.load_state_dict(checkpoint["model_state_dict"])
+            optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+            start_epoch = checkpoint["epoch"] + 1
+            best_test_loss = checkpoint.get("best_test_loss", float("inf"))
+            print(f"\nResumed from checkpoint: {resume_from_checkpoint}")
+            print(f"Starting from epoch {start_epoch}")
+
+        # Training loop
+        print("\n" + "=" * 80)
+        print("STARTING TRAINING")
+        print("=" * 80)
+
+        global_step = 0
+
+        # Outer progress bar for epochs
+        epoch_pbar = tqdm(
+            range(start_epoch, num_epochs),
+            desc="Epochs",
+            position=0,
+            leave=True,
+        )
+
+        for epoch in epoch_pbar:
+            # Training phase
+            self.model.train()
+            train_loss_accum = 0.0
+            train_recon_loss_accum = 0.0
+            train_kl_loss_accum = 0.0
+
+            # Inner progress bar for batches
+            batch_pbar = tqdm(
+                train_dataloader,
+                desc=f"Epoch {epoch + 1}/{num_epochs} - Training",
+                position=1,
+                leave=False,
             )
 
-            loss = vae_loss(patches, x_hat, mean, logvar, loss_beta)
+            for batch_idx, batch in enumerate(batch_pbar):
+                patches = batch["patches"].to(device)
+                flat_patches = resize_transform(patches.flatten(0, 1))
+                masks = batch["masks"].to(device)
+                flat_masks = masks.flatten()
 
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+                # Forward pass
+                x_hat, mean, logvar = self.model.encode_decode_object_patches(
+                    flat_patches, flat_masks
+                )
+
+                # Compute loss components
+                loss, recon_loss, kl_loss = vae_loss(
+                    flat_patches[flat_masks],
+                    x_hat,
+                    mean,
+                    logvar,
+                    loss_beta,
+                    return_components=True,
+                )
+
+                # Backward pass
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+                # Accumulate losses
+                train_loss_accum += loss.item()
+                train_recon_loss_accum += recon_loss.item()
+                train_kl_loss_accum += kl_loss.item()
+
+                # Update progress bar
+                batch_pbar.set_postfix(
+                    {
+                        "loss": f"{loss.item():.4f}",
+                        "recon": f"{recon_loss.item():.4f}",
+                        "kl": f"{kl_loss.item():.4f}",
+                    }
+                )
+
+                # Log to TensorBoard (per batch)
+                writer.add_scalar("Train/Loss_Step", loss.item(), global_step)
+                writer.add_scalar(
+                    "Train/Recon_Loss_Step", recon_loss.item(), global_step
+                )
+                writer.add_scalar("Train/KL_Loss_Step", kl_loss.item(), global_step)
+
+                global_step += 1
+
+            # Average training losses for the epoch
+            avg_train_loss = train_loss_accum / len(train_dataloader)
+            avg_train_recon_loss = train_recon_loss_accum / len(train_dataloader)
+            avg_train_kl_loss = train_kl_loss_accum / len(train_dataloader)
+
+            # Log epoch-level training metrics
+            writer.add_scalar("Train/Loss_Epoch", avg_train_loss, epoch)
+            writer.add_scalar("Train/Recon_Loss_Epoch", avg_train_recon_loss, epoch)
+            writer.add_scalar("Train/KL_Loss_Epoch", avg_train_kl_loss, epoch)
+
+            # Testing phase
+            if (epoch + 1) % test_every_n_epochs == 0:
+                test_loss, test_recon_loss, test_kl_loss = self._evaluate(
+                    test_dataloader,
+                    resize_transform,
+                    device,
+                    loss_beta,
+                    epoch,
+                    num_epochs,
+                )
+
+                # Log test metrics
+                writer.add_scalar("Test/Loss_Epoch", test_loss, epoch)
+                writer.add_scalar("Test/Recon_Loss_Epoch", test_recon_loss, epoch)
+                writer.add_scalar("Test/KL_Loss_Epoch", test_kl_loss, epoch)
+
+                # Update epoch progress bar with test results
+                epoch_pbar.set_postfix(
+                    {
+                        "train_loss": f"{avg_train_loss:.4f}",
+                        "test_loss": f"{test_loss:.4f}",
+                    }
+                )
+
+                # Track best model
+                if test_loss < best_test_loss:
+                    best_test_loss = test_loss
+                    best_checkpoint_path = checkpoints_dir / "best_model.pt"
+                    self._save_checkpoint(
+                        best_checkpoint_path,
+                        epoch,
+                        self.model,
+                        optimizer,
+                        avg_train_loss,
+                        test_loss,
+                        best_test_loss,
+                    )
+                    print(f"\n✓ New best model saved! Test loss: {test_loss:.4f}")
+            else:
+                epoch_pbar.set_postfix(
+                    {
+                        "train_loss": f"{avg_train_loss:.4f}",
+                    }
+                )
+
+            # Save periodic checkpoint
+            if (epoch + 1) % save_every_n_epochs == 0:
+                checkpoint_path = checkpoints_dir / f"checkpoint_epoch_{epoch + 1}.pt"
+                self._save_checkpoint(
+                    checkpoint_path,
+                    epoch,
+                    self.model,
+                    optimizer,
+                    avg_train_loss,
+                    test_loss if (epoch + 1) % test_every_n_epochs == 0 else None,
+                    best_test_loss,
+                )
+                print(f"\n✓ Checkpoint saved: {checkpoint_path.name}")
+
+        # Save final model
+        final_checkpoint_path = checkpoints_dir / "final_model.pt"
+        self._save_checkpoint(
+            final_checkpoint_path,
+            num_epochs - 1,
+            self.model,
+            optimizer,
+            avg_train_loss,
+            test_loss if num_epochs % test_every_n_epochs == 0 else None,
+            best_test_loss,
+        )
+
+        print("\n" + "=" * 80)
+        print("TRAINING COMPLETE")
+        print("=" * 80)
+        print(f"Best test loss: {best_test_loss:.4f}")
+        print(f"Final model saved to: {final_checkpoint_path}")
+        print(f"Best model saved to: {checkpoints_dir / 'best_model.pt'}")
+        print(f"TensorBoard logs: {logs_dir}")
+
+        writer.close()
+
+        return {
+            "best_test_loss": best_test_loss,
+            "final_train_loss": avg_train_loss,
+            "run_dir": run_dir,
+            "checkpoints_dir": checkpoints_dir,
+        }
+
+    def _evaluate(
+        self,
+        dataloader,
+        resize_transform,
+        device,
+        loss_beta,
+        epoch,
+        num_epochs,
+    ):
+        """Evaluate model on test set"""
+        self.model.eval()
+
+        test_loss_accum = 0.0
+        test_recon_loss_accum = 0.0
+        test_kl_loss_accum = 0.0
+
+        with torch.no_grad():
+            test_pbar = tqdm(
+                dataloader,
+                desc=f"Epoch {epoch + 1}/{num_epochs} - Testing",
+                position=1,
+                leave=False,
+            )
+
+            for batch in test_pbar:
+                patches = batch["patches"].to(device)
+                flat_patches = resize_transform(patches.flatten(0, 1))
+                masks = batch["masks"].to(device)
+                flat_masks = masks.flattent()
+
+                # Forward pass
+                x_hat, mean, logvar = self.model.encode_decode_object_patches(
+                    flat_patches, flat_masks
+                )
+
+                # Compute loss components
+                loss, recon_loss, kl_loss = vae_loss(
+                    flat_patches[flat_masks],
+                    x_hat,
+                    mean,
+                    logvar,
+                    loss_beta,
+                    return_components=True,
+                )
+
+                test_loss_accum += loss.item()
+                test_recon_loss_accum += recon_loss.item()
+                test_kl_loss_accum += kl_loss.item()
+
+                test_pbar.set_postfix(
+                    {
+                        "loss": f"{loss.item():.4f}",
+                    }
+                )
+
+        # Average test losses
+        avg_test_loss = test_loss_accum / len(dataloader)
+        avg_test_recon_loss = test_recon_loss_accum / len(dataloader)
+        avg_test_kl_loss = test_kl_loss_accum / len(dataloader)
+
+        self.model.train()  # Switch back to training mode
+
+        return avg_test_loss, avg_test_recon_loss, avg_test_kl_loss
+
+    def _save_checkpoint(
+        self,
+        path,
+        epoch,
+        model,
+        optimizer,
+        train_loss,
+        test_loss,
+        best_test_loss,
+    ):
+        """Save model checkpoint"""
+        checkpoint = {
+            "epoch": epoch,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "train_loss": train_loss,
+            "test_loss": test_loss,
+            "best_test_loss": best_test_loss,
+        }
+        torch.save(checkpoint, path)
+
+
+def vae_loss(x, x_hat, mean, logvar, beta, return_components=False):
+    """
+    VAE loss with optional component returns for logging
+
+    Args:
+        x: Original input
+        x_hat: Reconstructed input
+        mean: Latent mean
+        logvar: Latent log variance
+        beta: Weight for KL divergence term
+        return_components: If True, return (total_loss, recon_loss, kl_loss)
+    """
+    # Reconstruction loss (MSE)
+    recon_loss = torch.nn.functional.mse_loss(x_hat, x, reduction="mean")
+
+    # KL divergence loss
+    kl_loss = -0.5 * torch.sum(1 + logvar - mean.pow(2) - logvar.exp()) / x.shape[0]
+
+    # Total loss
+    total_loss = recon_loss + beta * kl_loss
+
+    if return_components:
+        return total_loss, recon_loss, kl_loss
+    return total_loss
