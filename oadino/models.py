@@ -158,6 +158,8 @@ class OADinoPreProcessor(nn.Module):
             return segmented_inputs, mask.reshape(batch_size, n_patches)
 
     def create_patches(self, inputs):
+        # sizes listed in the paper are 518 and 14
+        # in practice not sure this is actually the case ?
         pixel_values = inputs.pixel_values  # (batch, 3, 518, 518)
         batch_size, channels, height, width = pixel_values.shape
 
