@@ -35,8 +35,8 @@ def create_hf_dataset(image_dir, maxsize=-1):
 
 
 # Load and transform
-train_dataset = create_hf_dataset("/ssd2/mldata/CLEVR_v1.0/images/train", maxsize=2048)
-test_dataset = create_hf_dataset("/ssd2/mldata/CLEVR_v1.0/images/test", maxsize=2048)
+train_dataset = create_hf_dataset("/ssd2/mldata/CLEVR_v1.0/images/train", maxsize=4096)
+test_dataset = create_hf_dataset("/ssd2/mldata/CLEVR_v1.0/images/test", maxsize=4096)
 
 # Set format for PyTorch
 transform = transforms.Compose(
@@ -53,7 +53,7 @@ def transform_batch(batch):
 
 
 train_dataset = train_dataset.with_transform(transform_batch)
-train_dataset_name = "CLEVR_train_2K_224"
+train_dataset_name = "CLEVR_train_4K_224"
 test_dataset = test_dataset.with_transform(transform_batch)
 
 ## Loading Backbone Models
@@ -62,7 +62,7 @@ hf_cache = "/ssd2/mldata/hf"
 dino_processor = AutoImageProcessor.from_pretrained(
     "facebook/dinov2-small", cache_dir=hf_cache
 )
-dino_model = AutoModel.from_pretrained("facebook/dinov2-small", cache_dir=hf_cache)
+dino_model = AutoModel.from_pretrained("facebook/dinov2-base", cache_dir=hf_cache)
 
 ## Preparing training loop
 

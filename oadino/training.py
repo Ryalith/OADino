@@ -704,7 +704,7 @@ class Trainer:
                 patches = batch["patches"].to(device)
                 flat_patches = resize_transform(patches.flatten(0, 1))
                 masks = batch["masks"].to(device)
-                flat_masks = masks.flattent()
+                flat_masks = masks.flatten()
 
                 # Forward pass
                 x_hat, mean, logvar = self.model.encode_decode_object_patches(
