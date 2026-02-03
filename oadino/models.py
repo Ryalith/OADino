@@ -107,6 +107,89 @@ class ConvVAE16(VAE):
         return x_hat, mean, logvar
 
 
+class ConvVAE64(VAE):
+    """Variationnal autoencoders encoding dino patches (14*14 a priori)
+    The paper uses 64*64 patches resized from 14*14 but not sure why they do it
+    """
+
+    def __init__(self, latent_base=32, prior_dim=32):
+        """Latent dim will be latent_base*32"""
+        super().__init__()
+
+        self.input_size = 64
+        self.latent_base = latent_base
+        self.latent_dim = latent_base * 32
+        self.prior_dim = prior_dim
+
+        # Encoder: 64x64 -> 31x31 -> 14x14 -> 6x6 -> 2x2 -> flatten
+        self.encoder = nn.Sequential(
+            # Input: (batch, 3, 64, 64)
+            nn.Conv2d(
+                3, latent_base, kernel_size=4, stride=2, padding=0
+            ),  # -> (batch, lb, 31, 31)
+            nn.ReLU(),
+            nn.Conv2d(
+                latent_base, latent_base * 2, kernel_size=4, stride=2, padding=0
+            ),  # -> (batch, 2lb, 14, 14)
+            nn.ReLU(),
+            nn.Conv2d(
+                latent_base * 2, latent_base * 4, kernel_size=4, stride=2, padding=0
+            ),  # -> (batch, 4lb, 6, 6)
+            nn.ReLU(),
+            nn.Conv2d(
+                latent_base * 4, latent_base * 8, kernel_size=4, stride=2, padding=0
+            ),  # -> (batch, 8lb, 2, 2)
+            nn.ReLU(),
+            nn.Flatten(),  # -> (batch, 8lb*4*4)
+        )
+
+        # Mean and logvar layers for latent space
+        self.mean_layer = nn.Sequential(nn.Linear(latent_base * 8 * 2 * 2, prior_dim))
+        self.logvar_layer = nn.Sequential(nn.Linear(latent_base * 8 * 2 * 2, prior_dim))
+
+        # Decoder: latent -> 2x2 -> 6x6 -> 14x14 -> 31x31 -> 64x64
+        self.decoder = nn.Sequential(
+            nn.Linear(prior_dim, latent_base * 8 * 2 * 2),
+            nn.ReLU(inplace=True),
+            nn.Unflatten(1, (latent_base * 8, 2, 2)),
+            nn.ConvTranspose2d(
+                latent_base * 8, latent_base * 4, kernel_size=4, stride=2, padding=0
+            ),  # -> (batch, 4lb, 6, 6)
+            nn.ReLU(),
+            nn.ConvTranspose2d(
+                latent_base * 4, latent_base * 2, kernel_size=4, stride=2, padding=0
+            ),  # -> (batch, 2lb, 16, 16)
+            nn.ReLU(),
+            nn.ConvTranspose2d(
+                latent_base * 2, latent_base, kernel_size=4, stride=2, padding=0
+            ),  # -> (batch, 1lb, 31, 31)
+            nn.ReLU(),
+            nn.ConvTranspose2d(
+                latent_base, 3, kernel_size=4, stride=2, padding=0
+            ),  # -> (batch, 1lb, 64, 64)
+            nn.Sigmoid(),  # Output in [0, 1] range
+        )
+
+    def encode(self, x):
+        h = self.encoder(x)
+        mean, logvar = self.mean_layer(h), self.logvar_layer(h)
+        return mean, logvar
+
+    def reparameterization(self, mean, var):
+        epsilon = torch.randn_like(var).to(var.device)
+        z = mean + var * epsilon
+        return z
+
+    def decode(self, x):
+        return self.decoder(x)
+
+    def forward(self, x):
+        mean, logvar = self.encode(x)
+        z = self.reparameterization(mean, logvar)
+        x_hat = self.decode(z)
+        return x_hat, mean, logvar
+
+
 class OADinoPreProcessor(nn.Module):
     def __init__(self, processor, backbone: PreTrainedModel):
         super().__init__()
