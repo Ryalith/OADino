@@ -1,0 +1,13 @@
+torch
+torchvision
+transformers
+numpy
+tqdm
+typing
+tensorboard
+
+pillow
+kagglehub
+
+matplotlib
+scikit-learn
