@@ -35,8 +35,8 @@ def create_hf_dataset(image_dir, maxsize=-1):
 
 
 # Load and transform
-train_dataset = create_hf_dataset("/ssd2/mldata/CLEVR_v1.0/images/train", maxsize=4096)
-test_dataset = create_hf_dataset("/ssd2/mldata/CLEVR_v1.0/images/test", maxsize=4096)
+train_dataset = create_hf_dataset("C:/Users/maril/OneDrive/Desktop/GitHub/OADino/oadino/dataset/multi/CLEVR_v1.0/images/train", maxsize=-1)
+test_dataset = create_hf_dataset("C:/Users/maril/OneDrive/Desktop/GitHub/OADino/oadino/dataset/multi/CLEVR_v1.0/images/test", maxsize=-1)
 
 # Set format for PyTorch
 transform = transforms.Compose(
@@ -53,16 +53,20 @@ def transform_batch(batch):
 
 
 train_dataset = train_dataset.with_transform(transform_batch)
-train_dataset_name = "CLEVR_train_4K_224"
+train_dataset_name = "CLEVR_train_full_224"
 test_dataset = test_dataset.with_transform(transform_batch)
 
 ## Loading Backbone Models
-hf_cache = "/ssd2/mldata/hf"
+hf_cache = "C:/Users/maril/OneDrive/Desktop/GitHub/OADino/oadino/cache"
+
+import torch
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"Device: {device}")
 
 dino_processor = AutoImageProcessor.from_pretrained(
     "facebook/dinov2-small", cache_dir=hf_cache
 )
-dino_model = AutoModel.from_pretrained("facebook/dinov2-base", cache_dir=hf_cache)
+dino_model = AutoModel.from_pretrained("facebook/dinov2-base", cache_dir=hf_cache).to(device)
 
 ## Preparing training loop
 
@@ -76,4 +80,4 @@ trainer = Trainer(
 
 ## Execute training loop
 
-trainer.train("/ssd2/mldata/oadino")
+trainer.train("C:/Users/maril/OneDrive/Desktop/GitHub/OADino/oadino")

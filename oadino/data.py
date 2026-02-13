@@ -110,6 +110,8 @@ def build_clevr_records(
 
 def _load_image(path: Path) -> Image.Image:
 	img = Image.open(path).convert("RGB")
+	# resize loaded images to 224x224 to match training
+	img = img.resize((224, 224), Image.BILINEAR)
 	return img
 
 
@@ -245,12 +247,6 @@ def run_embedding_extraction(
 	Main pipeline that reproduces the paper's embedding extraction with OADino models.
 	"""
 	rng = random.Random(seed)
-	transform = transforms.Compose(
-		[
-			transforms.Resize(520),
-			transforms.CenterCrop(518),
-		]
-	)
 
 	records = build_clevr_records(
 		image_dir=image_dir,
@@ -271,14 +267,16 @@ def run_embedding_extraction(
 
 	for idx, record in enumerate(tqdm(records, desc="Extracting embeddings")):
 		try:
+			print(f"\n[DEBUG] Processing image {idx}: {record.image_path.name}")
 			target_image = _load_image(record.image_path)
+			print(f"[DEBUG] Loaded image, building packet...")
 			packet = build_image_packet(
 				target_image=target_image,
 				pool_images=pool_paths,
 				num_images=num_packet_images,
 				rng=rng,
-				transform=transform,
 			)
+			print(f"[DEBUG] Packet built, extracting embeddings...")
 
 			global_feature, latents_mean, mask = extract_embeddings_for_image(
 				preprocessor=preprocessor,
@@ -289,6 +287,8 @@ def run_embedding_extraction(
 				pca_niter=pca_niter,
 				device=device,
 			)
+			
+			print(f"[DEBUG] Embeddings extracted successfully")
 
 			dino_cls_list.append(global_feature)
 			latents_list.append(latents_mean)
@@ -298,6 +298,8 @@ def run_embedding_extraction(
 		except Exception as exc:
 			# Skip failed samples and continue
 			print(f"Skipping image {record.image_path.name}: {exc}")
+			import traceback
+			traceback.print_exc()
 			continue
 
 		if save_every > 0 and (idx + 1) % save_every == 0:
@@ -329,23 +331,37 @@ def run_embedding_extraction(
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
+# Verify GPU availability
+print(f"Device: {device}")
+if device == "cuda":
+    print(f"GPU: {torch.cuda.get_device_name(0)}")
+    print(f"CUDA Version: {torch.version.cuda}")
+else:
+    print("WARNING: CUDA not available, running on CPU")
+
 dino_processor = AutoImageProcessor.from_pretrained(
     "facebook/dinov2-small", cache_dir='cache'
 )
-dino_model = AutoModel.from_pretrained("facebook/dinov2-base", cache_dir='cache')
+dino_model = AutoModel.from_pretrained("facebook/dinov2-base", cache_dir='cache').to(device)
 
 preprocessor = OADinoPreProcessor(dino_processor, dino_model)
 
 # move OADino trained model file to folder which will contain results associated to it
 curr_model = 'CLEVR_train_4K_224_20260202_210355'
 
-model_dir = Path(f'data/{curr_model}/best_model.pt')
+model_dir = Path(f'./data/{curr_model}/best_model.pt')
 vae = ConvVAE16()
 model = OADinoModel(vae)
 model_load = torch.load(model_dir, map_location=device)
 model.load_state_dict(model_load["model_state_dict"])
 model.to(device)
 model.eval()
+
+# Verify models are on correct device
+print(f"\nModel device check:")
+print(f"  DINO backbone device: {next(dino_model.parameters()).device}")
+print(f"  VAE device: {next(model.vae.parameters()).device}")
+print()
 
 
 
@@ -356,18 +372,17 @@ model.eval()
 seed = 42
 pca_q = None
 pca_niter = 2
-save_every = 100
+save_every = 255
 
 image_dir = Path('./dataset/single/images_single')
 scenes_json = Path('./dataset/single/CLEVR_single_scenes.json')
-output_dir = Path('.data/CLEVR_train_4K_224_20260202_210355/embeddings/single_object')
+output_dir = Path('./data/CLEVR_train_4K_224_20260202_210355/embeddings/single_object')
 keep_single = True
 
-num_samples = 10
-# num_samples = 510
+num_samples = 510
 num_packet_images = 50
 
-run_embedding_extraction(preprocessor, model, image_dir, scenes_json, output_dir, keep_single, num_samples, num_packet_images, seed, pca_q, pca_niter, device, save_every, transform)
+run_embedding_extraction(preprocessor, model, image_dir, scenes_json, output_dir, keep_single, num_samples, num_packet_images, seed, pca_q, pca_niter, device, save_every)
 
 
 
@@ -404,19 +419,18 @@ print("Metadata[0]['color']:", metadata[0]["color"])  # Should be list of 1 stri
 seed = 42
 pca_q = None
 pca_niter = 2
-save_every = 100
+save_every = 500
 
 image_dir = Path('./dataset/multi/CLEVR_v1.0/images/val')
 scenes_json = Path('./dataset/multi/CLEVR_v1.0/scenes/CLEVR_val_scenes.json')
-output_dir = Path('.data/CLEVR_train_4K_224_20260202_210355/embeddings/multi_object')
+output_dir = Path('./data/CLEVR_train_4K_224_20260202_210355/embeddings/multi_object')
 
 keep_single = False
 
-num_samples = 10
-# num_samples = 5010
+num_samples = 5010
 num_packet_images = 50
 
-run_embedding_extraction(preprocessor, model, image_dir, scenes_json, output_dir, keep_single, num_samples, num_packet_images, seed, pca_q, pca_niter, device, save_every, transform)
+run_embedding_extraction(preprocessor, model, image_dir, scenes_json, output_dir, keep_single, num_samples, num_packet_images, seed, pca_q, pca_niter, device, save_every)
 
 
 

@@ -1,0 +1,78 @@
+{
+  "num_objects": 1,
+  "split": "single",
+  "image_index": 321,
+  "image_filename": "CLEVRTEX_single_000321.png",
+  "ground_material": "poliigongrounddirtforest014",
+  "directions": {
+    "behind": [
+      -0.7458261847496033,
+      0.6661406755447388,
+      0.0
+    ],
+    "front": [
+      0.7458261847496033,
+      -0.6661406755447388,
+      -0.0
+    ],
+    "left": [
+      -0.6661406755447388,
+      -0.7458261847496033,
+      0.0
+    ],
+    "right": [
+      0.6661406755447388,
+      0.7458261847496033,
+      -0.0
+    ],
+    "above": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "below": [
+      -0.0,
+      -0.0,
+      -1.0
+    ]
+  },
+  "objects": [
+    {
+      "shape": "cube",
+      "rotation": 139.07596303826674,
+      "size": "large",
+      "3d_coords": [
+        -0.49881094694137573,
+        1.1392048597335815,
+        0.6363961100578308
+      ],
+      "pixel_coords": [
+        262,
+        114,
+        12.365826606750488
+      ],
+      "index": 1,
+      "color": "yellow",
+      "material": "poliigonmetaldesignerweavesteel002"
+    }
+  ],
+  "relationships": {
+    "behind": [
+      []
+    ],
+    "front": [
+      []
+    ],
+    "left": [
+      []
+    ],
+    "right": [
+      []
+    ]
+  },
+  "mask_filename": "CLEVRTEX_single_000321_flat.png",
+  "normal_filename": "CLEVRTEX_single_000321_normal_0001.png",
+  "albedo_filename": "CLEVRTEX_single_000321_albedo_0001.png",
+  "depth_filename": "CLEVRTEX_single_000321_depth_0001.png",
+  "shadow_filename": "CLEVRTEX_single_000321_shadow_0001.png"
+}

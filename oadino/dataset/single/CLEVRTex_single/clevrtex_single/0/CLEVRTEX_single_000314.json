@@ -1,0 +1,78 @@
+{
+  "num_objects": 1,
+  "split": "single",
+  "image_index": 314,
+  "image_filename": "CLEVRTEX_single_000314.png",
+  "ground_material": "poliigonmetalcorrugatedironsheet002",
+  "directions": {
+    "behind": [
+      -0.7730045318603516,
+      0.6344004273414612,
+      0.0
+    ],
+    "front": [
+      0.7730045318603516,
+      -0.6344004273414612,
+      -0.0
+    ],
+    "left": [
+      -0.6344004273414612,
+      -0.7730045318603516,
+      0.0
+    ],
+    "right": [
+      0.6344004273414612,
+      0.7730045318603516,
+      -0.0
+    ],
+    "above": [
+      0.0,
+      0.0,
+      0.9999999403953552
+    ],
+    "below": [
+      -0.0,
+      -0.0,
+      -0.9999999403953552
+    ]
+  },
+  "objects": [
+    {
+      "shape": "monkey",
+      "rotation": 71.36159202344614,
+      "size": "medium",
+      "3d_coords": [
+        2.2103018760681152,
+        1.9061493873596191,
+        0.6000000238418579
+      ],
+      "pixel_coords": [
+        385,
+        144,
+        10.39734172821045
+      ],
+      "index": 1,
+      "color": "yellow",
+      "material": "poliigongroundforestroots001"
+    }
+  ],
+  "relationships": {
+    "behind": [
+      []
+    ],
+    "front": [
+      []
+    ],
+    "left": [
+      []
+    ],
+    "right": [
+      []
+    ]
+  },
+  "mask_filename": "CLEVRTEX_single_000314_flat.png",
+  "normal_filename": "CLEVRTEX_single_000314_normal_0001.png",
+  "albedo_filename": "CLEVRTEX_single_000314_albedo_0001.png",
+  "depth_filename": "CLEVRTEX_single_000314_depth_0001.png",
+  "shadow_filename": "CLEVRTEX_single_000314_shadow_0001.png"
+}

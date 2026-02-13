@@ -1,0 +1,78 @@
+{
+  "num_objects": 1,
+  "split": "single",
+  "image_index": 370,
+  "image_filename": "CLEVRTEX_single_000370.png",
+  "ground_material": "poliigongroundforestmulch001",
+  "directions": {
+    "behind": [
+      -0.7708055973052979,
+      0.6370704174041748,
+      0.0
+    ],
+    "front": [
+      0.7708055973052979,
+      -0.6370704174041748,
+      -0.0
+    ],
+    "left": [
+      -0.6370704174041748,
+      -0.7708056569099426,
+      0.0
+    ],
+    "right": [
+      0.6370704174041748,
+      0.7708056569099426,
+      -0.0
+    ],
+    "above": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "below": [
+      -0.0,
+      -0.0,
+      -1.0
+    ]
+  },
+  "objects": [
+    {
+      "shape": "sphere",
+      "rotation": 196.9007614815377,
+      "size": "small",
+      "3d_coords": [
+        1.4362691640853882,
+        0.05218019336462021,
+        0.4000000059604645
+      ],
+      "pixel_coords": [
+        289,
+        169,
+        10.334762573242188
+      ],
+      "index": 1,
+      "color": "green",
+      "material": "poliigonwoodflooring061"
+    }
+  ],
+  "relationships": {
+    "behind": [
+      []
+    ],
+    "front": [
+      []
+    ],
+    "left": [
+      []
+    ],
+    "right": [
+      []
+    ]
+  },
+  "mask_filename": "CLEVRTEX_single_000370_flat.png",
+  "normal_filename": "CLEVRTEX_single_000370_normal_0001.png",
+  "albedo_filename": "CLEVRTEX_single_000370_albedo_0001.png",
+  "depth_filename": "CLEVRTEX_single_000370_depth_0001.png",
+  "shadow_filename": "CLEVRTEX_single_000370_shadow_0001.png"
+}

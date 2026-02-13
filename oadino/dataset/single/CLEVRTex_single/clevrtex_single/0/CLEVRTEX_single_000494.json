@@ -1,0 +1,78 @@
+{
+  "num_objects": 1,
+  "split": "single",
+  "image_index": 494,
+  "image_filename": "CLEVRTEX_single_000494.png",
+  "ground_material": "poliigonchainmailcopperroundedthin001",
+  "directions": {
+    "behind": [
+      -0.7350510954856873,
+      0.6780117154121399,
+      0.0
+    ],
+    "front": [
+      0.7350510954856873,
+      -0.6780117154121399,
+      -0.0
+    ],
+    "left": [
+      -0.6780117154121399,
+      -0.7350510954856873,
+      0.0
+    ],
+    "right": [
+      0.6780117154121399,
+      0.7350510954856873,
+      -0.0
+    ],
+    "above": [
+      0.0,
+      0.0,
+      0.9999999403953552
+    ],
+    "below": [
+      -0.0,
+      -0.0,
+      -0.9999999403953552
+    ]
+  },
+  "objects": [
+    {
+      "shape": "cylinder",
+      "rotation": 340.19378468744895,
+      "size": "small",
+      "3d_coords": [
+        0.05036544054746628,
+        0.6992549300193787,
+        0.4000000059604645
+      ],
+      "pixel_coords": [
+        266,
+        133,
+        10.902932167053223
+      ],
+      "index": 1,
+      "color": "purple",
+      "material": "poliigonwoodplanksworn33"
+    }
+  ],
+  "relationships": {
+    "behind": [
+      []
+    ],
+    "front": [
+      []
+    ],
+    "left": [
+      []
+    ],
+    "right": [
+      []
+    ]
+  },
+  "mask_filename": "CLEVRTEX_single_000494_flat.png",
+  "normal_filename": "CLEVRTEX_single_000494_normal_0001.png",
+  "albedo_filename": "CLEVRTEX_single_000494_albedo_0001.png",
+  "depth_filename": "CLEVRTEX_single_000494_depth_0001.png",
+  "shadow_filename": "CLEVRTEX_single_000494_shadow_0001.png"
+}

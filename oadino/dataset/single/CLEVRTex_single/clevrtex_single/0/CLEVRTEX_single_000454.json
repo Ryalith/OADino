@@ -1,0 +1,78 @@
+{
+  "num_objects": 1,
+  "split": "single",
+  "image_index": 454,
+  "image_filename": "CLEVRTEX_single_000454.png",
+  "ground_material": "poliigonrustplain007",
+  "directions": {
+    "behind": [
+      -0.7480477690696716,
+      0.6636448502540588,
+      0.0
+    ],
+    "front": [
+      0.7480477690696716,
+      -0.6636448502540588,
+      -0.0
+    ],
+    "left": [
+      -0.6636447906494141,
+      -0.7480478286743164,
+      0.0
+    ],
+    "right": [
+      0.6636447906494141,
+      0.7480478286743164,
+      -0.0
+    ],
+    "above": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "below": [
+      -0.0,
+      -0.0,
+      -1.0
+    ]
+  },
+  "objects": [
+    {
+      "shape": "sphere",
+      "rotation": 221.9826645725475,
+      "size": "medium",
+      "3d_coords": [
+        -2.88327956199646,
+        -1.4381135702133179,
+        0.6000000238418579
+      ],
+      "pixel_coords": [
+        106,
+        111,
+        11.734768867492676
+      ],
+      "index": 1,
+      "color": "green",
+      "material": "poliigonwoodflooringmahoganyafricansanded001"
+    }
+  ],
+  "relationships": {
+    "behind": [
+      []
+    ],
+    "front": [
+      []
+    ],
+    "left": [
+      []
+    ],
+    "right": [
+      []
+    ]
+  },
+  "mask_filename": "CLEVRTEX_single_000454_flat.png",
+  "normal_filename": "CLEVRTEX_single_000454_normal_0001.png",
+  "albedo_filename": "CLEVRTEX_single_000454_albedo_0001.png",
+  "depth_filename": "CLEVRTEX_single_000454_depth_0001.png",
+  "shadow_filename": "CLEVRTEX_single_000454_shadow_0001.png"
+}

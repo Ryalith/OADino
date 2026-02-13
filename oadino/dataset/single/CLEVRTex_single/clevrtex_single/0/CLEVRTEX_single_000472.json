@@ -1,0 +1,78 @@
+{
+  "num_objects": 1,
+  "split": "single",
+  "image_index": 472,
+  "image_filename": "CLEVRTEX_single_000472.png",
+  "ground_material": "poliigonfabricupholsterymidcenturypebbles001",
+  "directions": {
+    "behind": [
+      -0.7379618883132935,
+      0.674842357635498,
+      0.0
+    ],
+    "front": [
+      0.7379618883132935,
+      -0.674842357635498,
+      -0.0
+    ],
+    "left": [
+      -0.674842357635498,
+      -0.7379619479179382,
+      0.0
+    ],
+    "right": [
+      0.674842357635498,
+      0.7379619479179382,
+      -0.0
+    ],
+    "above": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "below": [
+      -0.0,
+      -0.0,
+      -1.0
+    ]
+  },
+  "objects": [
+    {
+      "shape": "sphere",
+      "rotation": 190.4952435154521,
+      "size": "small",
+      "3d_coords": [
+        -0.9041917324066162,
+        -0.8736514449119568,
+        0.4000000059604645
+      ],
+      "pixel_coords": [
+        180,
+        141,
+        10.9400634765625
+      ],
+      "index": 1,
+      "color": "blue",
+      "material": "poliigoninteriordesignrugstarrynight001"
+    }
+  ],
+  "relationships": {
+    "behind": [
+      []
+    ],
+    "front": [
+      []
+    ],
+    "left": [
+      []
+    ],
+    "right": [
+      []
+    ]
+  },
+  "mask_filename": "CLEVRTEX_single_000472_flat.png",
+  "normal_filename": "CLEVRTEX_single_000472_normal_0001.png",
+  "albedo_filename": "CLEVRTEX_single_000472_albedo_0001.png",
+  "depth_filename": "CLEVRTEX_single_000472_depth_0001.png",
+  "shadow_filename": "CLEVRTEX_single_000472_shadow_0001.png"
+}

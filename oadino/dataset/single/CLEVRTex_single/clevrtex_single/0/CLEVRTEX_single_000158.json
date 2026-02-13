@@ -1,0 +1,78 @@
+{
+  "num_objects": 1,
+  "split": "single",
+  "image_index": 158,
+  "image_filename": "CLEVRTEX_single_000158.png",
+  "ground_material": "poliigonsolarpanelspolycrystallinetypebframedclean001",
+  "directions": {
+    "behind": [
+      -0.7374637722969055,
+      0.6753866672515869,
+      0.0
+    ],
+    "front": [
+      0.7374637722969055,
+      -0.6753866672515869,
+      -0.0
+    ],
+    "left": [
+      -0.6753867268562317,
+      -0.7374637722969055,
+      0.0
+    ],
+    "right": [
+      0.6753867268562317,
+      0.7374637722969055,
+      -0.0
+    ],
+    "above": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "below": [
+      -0.0,
+      -0.0,
+      -1.0
+    ]
+  },
+  "objects": [
+    {
+      "shape": "sphere",
+      "rotation": 105.07322570122486,
+      "size": "small",
+      "3d_coords": [
+        -2.1104190349578857,
+        2.8470547199249268,
+        0.4000000059604645
+      ],
+      "pixel_coords": [
+        265,
+        92,
+        14.440450668334961
+      ],
+      "index": 1,
+      "color": "purple",
+      "material": "poliigonfabricdenim003"
+    }
+  ],
+  "relationships": {
+    "behind": [
+      []
+    ],
+    "front": [
+      []
+    ],
+    "left": [
+      []
+    ],
+    "right": [
+      []
+    ]
+  },
+  "mask_filename": "CLEVRTEX_single_000158_flat.png",
+  "normal_filename": "CLEVRTEX_single_000158_normal_0001.png",
+  "albedo_filename": "CLEVRTEX_single_000158_albedo_0001.png",
+  "depth_filename": "CLEVRTEX_single_000158_depth_0001.png",
+  "shadow_filename": "CLEVRTEX_single_000158_shadow_0001.png"
+}

@@ -1,0 +1,78 @@
+{
+  "num_objects": 1,
+  "split": "single",
+  "image_index": 365,
+  "image_filename": "CLEVRTEX_single_000365.png",
+  "ground_material": "poliigontilesmarblechevroncreamgrey001",
+  "directions": {
+    "behind": [
+      -0.7480894923210144,
+      0.6635978817939758,
+      0.0
+    ],
+    "front": [
+      0.7480894923210144,
+      -0.6635978817939758,
+      -0.0
+    ],
+    "left": [
+      -0.663597822189331,
+      -0.7480894923210144,
+      0.0
+    ],
+    "right": [
+      0.663597822189331,
+      0.7480894923210144,
+      -0.0
+    ],
+    "above": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "below": [
+      -0.0,
+      -0.0,
+      -1.0
+    ]
+  },
+  "objects": [
+    {
+      "shape": "cube",
+      "rotation": 271.7438612183848,
+      "size": "medium",
+      "3d_coords": [
+        -2.8285672664642334,
+        0.7069627046585083,
+        0.4242640733718872
+      ],
+      "pixel_coords": [
+        185,
+        95,
+        12.8950777053833
+      ],
+      "index": 1,
+      "color": "purple",
+      "material": "poliigongroundtiretracks001"
+    }
+  ],
+  "relationships": {
+    "behind": [
+      []
+    ],
+    "front": [
+      []
+    ],
+    "left": [
+      []
+    ],
+    "right": [
+      []
+    ]
+  },
+  "mask_filename": "CLEVRTEX_single_000365_flat.png",
+  "normal_filename": "CLEVRTEX_single_000365_normal_0001.png",
+  "albedo_filename": "CLEVRTEX_single_000365_albedo_0001.png",
+  "depth_filename": "CLEVRTEX_single_000365_depth_0001.png",
+  "shadow_filename": "CLEVRTEX_single_000365_shadow_0001.png"
+}

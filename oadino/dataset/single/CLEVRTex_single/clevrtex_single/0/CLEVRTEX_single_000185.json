@@ -1,0 +1,78 @@
+{
+  "num_objects": 1,
+  "split": "single",
+  "image_index": 185,
+  "image_filename": "CLEVRTEX_single_000185.png",
+  "ground_material": "poliigonrooftilesterracotta004",
+  "directions": {
+    "behind": [
+      -0.7421076893806458,
+      0.6702805757522583,
+      0.0
+    ],
+    "front": [
+      0.7421076893806458,
+      -0.6702805757522583,
+      -0.0
+    ],
+    "left": [
+      -0.6702806353569031,
+      -0.7421076893806458,
+      0.0
+    ],
+    "right": [
+      0.6702806353569031,
+      0.7421076893806458,
+      -0.0
+    ],
+    "above": [
+      0.0,
+      0.0,
+      0.9999999403953552
+    ],
+    "below": [
+      -0.0,
+      -0.0,
+      -0.9999999403953552
+    ]
+  },
+  "objects": [
+    {
+      "shape": "sphere",
+      "rotation": 108.60400283518415,
+      "size": "large",
+      "3d_coords": [
+        1.3717156648635864,
+        2.8337714672088623,
+        0.8999999761581421
+      ],
+      "pixel_coords": [
+        376,
+        106,
+        11.68222427368164
+      ],
+      "index": 1,
+      "color": "gray",
+      "material": "poliigonbrickspaintedwhite001"
+    }
+  ],
+  "relationships": {
+    "behind": [
+      []
+    ],
+    "front": [
+      []
+    ],
+    "left": [
+      []
+    ],
+    "right": [
+      []
+    ]
+  },
+  "mask_filename": "CLEVRTEX_single_000185_flat.png",
+  "normal_filename": "CLEVRTEX_single_000185_normal_0001.png",
+  "albedo_filename": "CLEVRTEX_single_000185_albedo_0001.png",
+  "depth_filename": "CLEVRTEX_single_000185_depth_0001.png",
+  "shadow_filename": "CLEVRTEX_single_000185_shadow_0001.png"
+}

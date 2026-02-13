@@ -1,0 +1,78 @@
+{
+  "num_objects": 1,
+  "split": "single",
+  "image_index": 227,
+  "image_filename": "CLEVRTEX_single_000227.png",
+  "ground_material": "poliigontilesrectangularmirrorgray001",
+  "directions": {
+    "behind": [
+      -0.763030469417572,
+      0.6463625431060791,
+      0.0
+    ],
+    "front": [
+      0.763030469417572,
+      -0.6463625431060791,
+      -0.0
+    ],
+    "left": [
+      -0.6463624835014343,
+      -0.763030469417572,
+      0.0
+    ],
+    "right": [
+      0.6463624835014343,
+      0.763030469417572,
+      -0.0
+    ],
+    "above": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "below": [
+      -0.0,
+      -0.0,
+      -1.0
+    ]
+  },
+  "objects": [
+    {
+      "shape": "cylinder",
+      "rotation": 115.05917376883893,
+      "size": "small",
+      "3d_coords": [
+        2.1816751956939697,
+        -0.12119501829147339,
+        0.4000000059604645
+      ],
+      "pixel_coords": [
+        313,
+        187,
+        9.45962142944336
+      ],
+      "index": 1,
+      "color": "blue",
+      "material": "poliigonstonebricksbeige015"
+    }
+  ],
+  "relationships": {
+    "behind": [
+      []
+    ],
+    "front": [
+      []
+    ],
+    "left": [
+      []
+    ],
+    "right": [
+      []
+    ]
+  },
+  "mask_filename": "CLEVRTEX_single_000227_flat.png",
+  "normal_filename": "CLEVRTEX_single_000227_normal_0001.png",
+  "albedo_filename": "CLEVRTEX_single_000227_albedo_0001.png",
+  "depth_filename": "CLEVRTEX_single_000227_depth_0001.png",
+  "shadow_filename": "CLEVRTEX_single_000227_shadow_0001.png"
+}

@@ -1,0 +1,78 @@
+{
+  "num_objects": 1,
+  "split": "single",
+  "image_index": 14,
+  "image_filename": "CLEVRTEX_single_000014.png",
+  "ground_material": "poliigontilesmarblesagegreenbrickbondhoned001",
+  "directions": {
+    "behind": [
+      -0.7599095106124878,
+      0.6500288844108582,
+      0.0
+    ],
+    "front": [
+      0.7599095106124878,
+      -0.6500288844108582,
+      -0.0
+    ],
+    "left": [
+      -0.6500289440155029,
+      -0.7599095106124878,
+      0.0
+    ],
+    "right": [
+      0.6500289440155029,
+      0.7599095106124878,
+      -0.0
+    ],
+    "above": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "below": [
+      -0.0,
+      -0.0,
+      -1.0
+    ]
+  },
+  "objects": [
+    {
+      "shape": "monkey",
+      "rotation": 207.67144918013238,
+      "size": "large",
+      "3d_coords": [
+        1.3979723453521729,
+        0.6023024916648865,
+        0.8999999761581421
+      ],
+      "pixel_coords": [
+        311,
+        135,
+        10.0375394821167
+      ],
+      "index": 1,
+      "color": "green",
+      "material": "poliigoncitystreetroadasphalttwolaneworn001"
+    }
+  ],
+  "relationships": {
+    "behind": [
+      []
+    ],
+    "front": [
+      []
+    ],
+    "left": [
+      []
+    ],
+    "right": [
+      []
+    ]
+  },
+  "mask_filename": "CLEVRTEX_single_000014_flat.png",
+  "normal_filename": "CLEVRTEX_single_000014_normal_0001.png",
+  "albedo_filename": "CLEVRTEX_single_000014_albedo_0001.png",
+  "depth_filename": "CLEVRTEX_single_000014_depth_0001.png",
+  "shadow_filename": "CLEVRTEX_single_000014_shadow_0001.png"
+}

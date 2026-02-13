@@ -1,0 +1,78 @@
+{
+  "num_objects": 1,
+  "split": "single",
+  "image_index": 232,
+  "image_filename": "CLEVRTEX_single_000232.png",
+  "ground_material": "poliigongroundmoss001",
+  "directions": {
+    "behind": [
+      -0.7521016597747803,
+      0.6590471267700195,
+      0.0
+    ],
+    "front": [
+      0.7521016597747803,
+      -0.6590471267700195,
+      -0.0
+    ],
+    "left": [
+      -0.6590471267700195,
+      -0.7521016597747803,
+      0.0
+    ],
+    "right": [
+      0.6590471267700195,
+      0.7521016597747803,
+      -0.0
+    ],
+    "above": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "below": [
+      -0.0,
+      -0.0,
+      -1.0
+    ]
+  },
+  "objects": [
+    {
+      "shape": "monkey",
+      "rotation": 326.17632613767483,
+      "size": "small",
+      "3d_coords": [
+        -0.3731282949447632,
+        -2.191483497619629,
+        0.4000000059604645
+      ],
+      "pixel_coords": [
+        134,
+        172,
+        9.405091285705566
+      ],
+      "index": 1,
+      "color": "blue",
+      "material": "poliigonstonemarblecalacatta004"
+    }
+  ],
+  "relationships": {
+    "behind": [
+      []
+    ],
+    "front": [
+      []
+    ],
+    "left": [
+      []
+    ],
+    "right": [
+      []
+    ]
+  },
+  "mask_filename": "CLEVRTEX_single_000232_flat.png",
+  "normal_filename": "CLEVRTEX_single_000232_normal_0001.png",
+  "albedo_filename": "CLEVRTEX_single_000232_albedo_0001.png",
+  "depth_filename": "CLEVRTEX_single_000232_depth_0001.png",
+  "shadow_filename": "CLEVRTEX_single_000232_shadow_0001.png"
+}

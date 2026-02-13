@@ -1,0 +1,78 @@
+{
+  "num_objects": 1,
+  "split": "single",
+  "image_index": 449,
+  "image_filename": "CLEVRTEX_single_000449.png",
+  "ground_material": "poliigonwoodplanksworn33",
+  "directions": {
+    "behind": [
+      -0.7874324917793274,
+      0.6164010167121887,
+      0.0
+    ],
+    "front": [
+      0.7874324917793274,
+      -0.6164010167121887,
+      -0.0
+    ],
+    "left": [
+      -0.616400957107544,
+      -0.7874324321746826,
+      0.0
+    ],
+    "right": [
+      0.616400957107544,
+      0.7874324321746826,
+      -0.0
+    ],
+    "above": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "below": [
+      -0.0,
+      -0.0,
+      -1.0
+    ]
+  },
+  "objects": [
+    {
+      "shape": "sphere",
+      "rotation": 146.54874752334229,
+      "size": "medium",
+      "3d_coords": [
+        -0.8344658613204956,
+        0.056203559041023254,
+        0.6000000238418579
+      ],
+      "pixel_coords": [
+        219,
+        122,
+        11.691561698913574
+      ],
+      "index": 1,
+      "color": "green",
+      "material": "poliigonwoodplanks028"
+    }
+  ],
+  "relationships": {
+    "behind": [
+      []
+    ],
+    "front": [
+      []
+    ],
+    "left": [
+      []
+    ],
+    "right": [
+      []
+    ]
+  },
+  "mask_filename": "CLEVRTEX_single_000449_flat.png",
+  "normal_filename": "CLEVRTEX_single_000449_normal_0001.png",
+  "albedo_filename": "CLEVRTEX_single_000449_albedo_0001.png",
+  "depth_filename": "CLEVRTEX_single_000449_depth_0001.png",
+  "shadow_filename": "CLEVRTEX_single_000449_shadow_0001.png"
+}

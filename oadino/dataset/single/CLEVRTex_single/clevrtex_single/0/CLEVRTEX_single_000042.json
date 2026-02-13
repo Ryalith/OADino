@@ -1,0 +1,78 @@
+{
+  "num_objects": 1,
+  "split": "single",
+  "image_index": 42,
+  "image_filename": "CLEVRTEX_single_000042.png",
+  "ground_material": "poliigonwaterdropletsmixedbubbled001",
+  "directions": {
+    "behind": [
+      -0.7643424868583679,
+      0.6448104381561279,
+      0.0
+    ],
+    "front": [
+      0.7643424868583679,
+      -0.6448104381561279,
+      -0.0
+    ],
+    "left": [
+      -0.6448104977607727,
+      -0.7643425464630127,
+      0.0
+    ],
+    "right": [
+      0.6448104977607727,
+      0.7643425464630127,
+      -0.0
+    ],
+    "above": [
+      0.0,
+      0.0,
+      0.9999999403953552
+    ],
+    "below": [
+      -0.0,
+      -0.0,
+      -0.9999999403953552
+    ]
+  },
+  "objects": [
+    {
+      "shape": "cylinder",
+      "rotation": 67.20381248526049,
+      "size": "small",
+      "3d_coords": [
+        -2.0892574787139893,
+        -1.4376931190490723,
+        0.4000000059604645
+      ],
+      "pixel_coords": [
+        131,
+        131,
+        11.752251625061035
+      ],
+      "index": 1,
+      "color": "gray",
+      "material": "poliigonplaster17"
+    }
+  ],
+  "relationships": {
+    "behind": [
+      []
+    ],
+    "front": [
+      []
+    ],
+    "left": [
+      []
+    ],
+    "right": [
+      []
+    ]
+  },
+  "mask_filename": "CLEVRTEX_single_000042_flat.png",
+  "normal_filename": "CLEVRTEX_single_000042_normal_0001.png",
+  "albedo_filename": "CLEVRTEX_single_000042_albedo_0001.png",
+  "depth_filename": "CLEVRTEX_single_000042_depth_0001.png",
+  "shadow_filename": "CLEVRTEX_single_000042_shadow_0001.png"
+}

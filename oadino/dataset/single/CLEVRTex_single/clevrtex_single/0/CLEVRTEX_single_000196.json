@@ -1,0 +1,78 @@
+{
+  "num_objects": 1,
+  "split": "single",
+  "image_index": 196,
+  "image_filename": "CLEVRTEX_single_000196.png",
+  "ground_material": "poliigoncobblestonearches002",
+  "directions": {
+    "behind": [
+      -0.769493043422699,
+      0.6386551856994629,
+      0.0
+    ],
+    "front": [
+      0.769493043422699,
+      -0.6386551856994629,
+      -0.0
+    ],
+    "left": [
+      -0.6386550664901733,
+      -0.7694931030273438,
+      0.0
+    ],
+    "right": [
+      0.6386550664901733,
+      0.7694931030273438,
+      -0.0
+    ],
+    "above": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "below": [
+      -0.0,
+      -0.0,
+      -1.0
+    ]
+  },
+  "objects": [
+    {
+      "shape": "monkey",
+      "rotation": 310.80405303917297,
+      "size": "small",
+      "3d_coords": [
+        2.5220043659210205,
+        0.45761018991470337,
+        0.4000000059604645
+      ],
+      "pixel_coords": [
+        350,
+        189,
+        9.37580680847168
+      ],
+      "index": 1,
+      "color": "purple",
+      "material": "poliigonmarble062"
+    }
+  ],
+  "relationships": {
+    "behind": [
+      []
+    ],
+    "front": [
+      []
+    ],
+    "left": [
+      []
+    ],
+    "right": [
+      []
+    ]
+  },
+  "mask_filename": "CLEVRTEX_single_000196_flat.png",
+  "normal_filename": "CLEVRTEX_single_000196_normal_0001.png",
+  "albedo_filename": "CLEVRTEX_single_000196_albedo_0001.png",
+  "depth_filename": "CLEVRTEX_single_000196_depth_0001.png",
+  "shadow_filename": "CLEVRTEX_single_000196_shadow_0001.png"
+}

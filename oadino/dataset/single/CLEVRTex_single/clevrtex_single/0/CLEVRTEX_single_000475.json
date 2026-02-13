@@ -1,0 +1,78 @@
+{
+  "num_objects": 1,
+  "split": "single",
+  "image_index": 475,
+  "image_filename": "CLEVRTEX_single_000475.png",
+  "ground_material": "poliigoncitystreetasphaltgenericcracked002",
+  "directions": {
+    "behind": [
+      -0.7484626173973083,
+      0.6631770133972168,
+      0.0
+    ],
+    "front": [
+      0.7484626173973083,
+      -0.6631770133972168,
+      -0.0
+    ],
+    "left": [
+      -0.663176953792572,
+      -0.7484626173973083,
+      0.0
+    ],
+    "right": [
+      0.663176953792572,
+      0.7484626173973083,
+      -0.0
+    ],
+    "above": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "below": [
+      -0.0,
+      -0.0,
+      -1.0
+    ]
+  },
+  "objects": [
+    {
+      "shape": "sphere",
+      "rotation": 116.20146723666211,
+      "size": "medium",
+      "3d_coords": [
+        -2.2473790645599365,
+        1.3792651891708374,
+        0.6000000238418579
+      ],
+      "pixel_coords": [
+        222,
+        94,
+        13.660643577575684
+      ],
+      "index": 1,
+      "color": "gray",
+      "material": "poliigongrounddirtforest014"
+    }
+  ],
+  "relationships": {
+    "behind": [
+      []
+    ],
+    "front": [
+      []
+    ],
+    "left": [
+      []
+    ],
+    "right": [
+      []
+    ]
+  },
+  "mask_filename": "CLEVRTEX_single_000475_flat.png",
+  "normal_filename": "CLEVRTEX_single_000475_normal_0001.png",
+  "albedo_filename": "CLEVRTEX_single_000475_albedo_0001.png",
+  "depth_filename": "CLEVRTEX_single_000475_depth_0001.png",
+  "shadow_filename": "CLEVRTEX_single_000475_shadow_0001.png"
+}

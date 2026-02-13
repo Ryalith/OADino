@@ -1,0 +1,78 @@
+{
+  "num_objects": 1,
+  "split": "single",
+  "image_index": 505,
+  "image_filename": "CLEVRTEX_single_000505.png",
+  "ground_material": "poliigonfabricleatherbuffalorustic001",
+  "directions": {
+    "behind": [
+      -0.7475510239601135,
+      0.6642044186592102,
+      0.0
+    ],
+    "front": [
+      0.7475510239601135,
+      -0.6642044186592102,
+      -0.0
+    ],
+    "left": [
+      -0.6642044186592102,
+      -0.7475510239601135,
+      0.0
+    ],
+    "right": [
+      0.6642044186592102,
+      0.7475510239601135,
+      -0.0
+    ],
+    "above": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "below": [
+      -0.0,
+      -0.0,
+      -1.0
+    ]
+  },
+  "objects": [
+    {
+      "shape": "monkey",
+      "rotation": 155.31344161611318,
+      "size": "medium",
+      "3d_coords": [
+        2.7871878147125244,
+        -0.27022555470466614,
+        0.6000000238418579
+      ],
+      "pixel_coords": [
+        337,
+        193,
+        8.967554092407227
+      ],
+      "index": 1,
+      "color": "purple",
+      "material": "poliigonmarble13"
+    }
+  ],
+  "relationships": {
+    "behind": [
+      []
+    ],
+    "front": [
+      []
+    ],
+    "left": [
+      []
+    ],
+    "right": [
+      []
+    ]
+  },
+  "mask_filename": "CLEVRTEX_single_000505_flat.png",
+  "normal_filename": "CLEVRTEX_single_000505_normal_0001.png",
+  "albedo_filename": "CLEVRTEX_single_000505_albedo_0001.png",
+  "depth_filename": "CLEVRTEX_single_000505_depth_0001.png",
+  "shadow_filename": "CLEVRTEX_single_000505_shadow_0001.png"
+}

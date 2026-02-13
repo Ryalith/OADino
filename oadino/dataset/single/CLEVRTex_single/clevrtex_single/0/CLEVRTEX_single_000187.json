@@ -1,0 +1,78 @@
+{
+  "num_objects": 1,
+  "split": "single",
+  "image_index": 187,
+  "image_filename": "CLEVRTEX_single_000187.png",
+  "ground_material": "poliigoncliffjagged004",
+  "directions": {
+    "behind": [
+      -0.770560622215271,
+      0.6373666524887085,
+      0.0
+    ],
+    "front": [
+      0.770560622215271,
+      -0.6373666524887085,
+      -0.0
+    ],
+    "left": [
+      -0.6373666524887085,
+      -0.7705606818199158,
+      0.0
+    ],
+    "right": [
+      0.6373666524887085,
+      0.7705606818199158,
+      -0.0
+    ],
+    "above": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "below": [
+      -0.0,
+      -0.0,
+      -1.0
+    ]
+  },
+  "objects": [
+    {
+      "shape": "cube",
+      "rotation": 242.5425818599106,
+      "size": "small",
+      "3d_coords": [
+        2.326326370239258,
+        -0.433592826128006,
+        0.2828427255153656
+      ],
+      "pixel_coords": [
+        303,
+        203,
+        9.499510765075684
+      ],
+      "index": 1,
+      "color": "green",
+      "material": "poliigoninteriordesignrugstarrynight001"
+    }
+  ],
+  "relationships": {
+    "behind": [
+      []
+    ],
+    "front": [
+      []
+    ],
+    "left": [
+      []
+    ],
+    "right": [
+      []
+    ]
+  },
+  "mask_filename": "CLEVRTEX_single_000187_flat.png",
+  "normal_filename": "CLEVRTEX_single_000187_normal_0001.png",
+  "albedo_filename": "CLEVRTEX_single_000187_albedo_0001.png",
+  "depth_filename": "CLEVRTEX_single_000187_depth_0001.png",
+  "shadow_filename": "CLEVRTEX_single_000187_shadow_0001.png"
+}
