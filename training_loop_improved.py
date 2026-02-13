@@ -63,8 +63,8 @@ dinov2_vits14 = dinov2_vits14.cuda()
 dinov2_vits14.eval()
 
 
-model = OADinoModel(ConvVAE64())
 # model = OADinoModel(ConvVAE64())
+model = OADinoModel(ConvVAE16())
 # pre_processor = OADinoPreProcessor(dinov2_vitb14)
 pre_processor = OADinoPreProcessor(dinov2_vits14)
 
@@ -80,4 +80,8 @@ trainer = Trainer(
     combined_test,
     224,
 )
-trainer.train("/ssd2/mldata/oadino", 20)
+trainer.train(
+    "/ssd2/mldata/oadino",
+    10,
+    resume_from_checkpoint="runs/CLEVR_CLEVRTex_train_4K_224_VAE16_20260213_143605/checkpoints/best_model.pt",
+)
