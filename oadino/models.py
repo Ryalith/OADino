@@ -1,9 +1,11 @@
 from typing import Sequence
 
+import numpy as np
 import torch
+from sklearn.decomposition import PCA
 from torch import nn
-from transformers import PreTrainedModel
 from torchvision import transforms
+from transformers import PreTrainedModel
 
 
 class VAE(nn.Module):
@@ -150,7 +152,7 @@ class ConvVAE64(VAE):
         # Decoder: latent -> 2x2 -> 6x6 -> 14x14 -> 31x31 -> 64x64
         self.decoder = nn.Sequential(
             nn.Linear(prior_dim, latent_base * 8 * 2 * 2),
-            nn.ReLU(inplace=True),
+            nn.ReLU(),
             nn.Unflatten(1, (latent_base * 8, 2, 2)),
             nn.ConvTranspose2d(
                 latent_base * 8, latent_base * 4, kernel_size=4, stride=2, padding=0
@@ -158,10 +160,10 @@ class ConvVAE64(VAE):
             nn.ReLU(),
             nn.ConvTranspose2d(
                 latent_base * 4, latent_base * 2, kernel_size=4, stride=2, padding=0
-            ),  # -> (batch, 2lb, 16, 16)
+            ),  # -> (batch, 2lb, 14, 14)
             nn.ReLU(),
             nn.ConvTranspose2d(
-                latent_base * 2, latent_base, kernel_size=4, stride=2, padding=0
+                latent_base * 2, latent_base, kernel_size=5, stride=2, padding=0
             ),  # -> (batch, 1lb, 31, 31)
             nn.ReLU(),
             nn.ConvTranspose2d(
@@ -191,61 +193,88 @@ class ConvVAE64(VAE):
 
 
 class OADinoPreProcessor(nn.Module):
-    def __init__(self, processor, backbone: PreTrainedModel):
+    def __init__(self, backbone: nn.Module):
+        """The Processor now expects the backbone to be a model loaded from torch.hub
+        For example:
+            dinov2_vits14 = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
+        """
         super().__init__()
-        self.processor = processor
         self.backbone = backbone
 
     @staticmethod
-    def get_mask(flat_patches, pca_q, pca_niter):
+    def get_median_mask(flat_patches, pca_q=None, pca_niter=2):
+        device = flat_patches.device
+        fg_pca = PCA(n_components=1)
+        patch_pca = fg_pca.fit_transform(flat_patches.detach().cpu())
+        mask = patch_pca > np.median(patch_pca)
+        mask = torch.from_numpy(mask)
+        return ~mask.to(device).squeeze(-1)
+
+    @staticmethod
+    def get_mean_mask(flat_patches, pca_q=None, pca_niter=2):
         flattened_patches_centered = flat_patches - flat_patches.mean(dim=0)
         U, S, V = torch.pca_lowrank(flattened_patches_centered, pca_q, False, pca_niter)
         patch_pca = torch.matmul(flattened_patches_centered, V[:, 0])
-        return patch_pca > patch_pca.median()
+        return patch_pca > patch_pca.mean()
 
-    def segment_images(self, images, pca_q, pca_niter):
+    def segment_images(self, images, pca_q=None, pca_niter=2, add_opt_outputs=False):
+        """Segment images to isolate objects based on pca and DINOV2 features
+        images are expected to come in batches of shape (batch_size, 3, 224, 224)
+        images are expected to be scaled in 0, 1 then normalized with a transform like
+        T.Normalize([0.5], [0.5])
+        """
         with torch.no_grad():
-            inputs = self.processor(images=images, return_tensors="pt")
-            outputs = self.backbone(**inputs)
+            outputs = self.backbone.forward_features(images)
 
             # (batch_size, 1+n_patches, hidden_size)
-            backbone_lhs = outputs.last_hidden_state
-            backbone_patches = backbone_lhs[:, 1:, :]
+            backbone_patches = outputs["x_norm_patchtokens"]
 
-            batch_size, n_patches, hidden_size = backbone_lhs.shape
-            _, _, height, width = inputs.pixel_values.shape
-            patch_size = self.backbone.config.patch_size  # DINOv2 patch size 14
-            n_patches -= 1
+            batch_size, n_patches, hidden_size = backbone_patches.shape
+            _, _, height, width = images.shape
+            patch_size = 14  # DINOv2 patch size 14
 
             # 1. Foreground separation of patches
 
             flattened_patches = backbone_patches.reshape((-1, hidden_size))
-            rough_mask = self.get_mask(flattened_patches, pca_q, pca_niter)
+            rough_mask = self.get_median_mask(flattened_patches, pca_q, pca_niter)
+            # 2. Refining object consistency
 
-            # 2. Refinig object consistency
-
-            masked_patches = flattened_patches * rough_mask[:, None]
-            mask = self.get_mask(masked_patches, pca_q, pca_niter)
+            masked_patches = flattened_patches[rough_mask]
+            refined_mask = self.get_median_mask(masked_patches, pca_q, pca_niter)
+            # refined_mask = self.get_mean_mask(masked_patches, pca_q, pca_niter)
 
             # 3. Remapping to image space
+
+            mask = rough_mask.clone()
+            mask[rough_mask] = refined_mask
 
             pixel_mask = mask.reshape(
                 (batch_size, 1, height // patch_size, 1, width // patch_size, 1)
             )
             pixel_mask = pixel_mask.expand((-1, 3, -1, patch_size, -1, patch_size))
             pixel_mask = pixel_mask.reshape((batch_size, 3, height, width))
-            segmented_inputs = inputs
-            segmented_inputs.pixel_values = inputs.pixel_values * pixel_mask
+            pixel_mask = pixel_mask.float()
+            pixel_mask = (
+                1 - pixel_mask
+            )  # true means masked, but true is 1. and we want 0. to mask
+            segmented_images = -1 * pixel_mask + images * (1 - pixel_mask)
 
-            return segmented_inputs, mask.reshape(batch_size, n_patches)
+            if add_opt_outputs:
+                return (
+                    segmented_images,
+                    mask.reshape(batch_size, n_patches),
+                    backbone_patches,
+                    rough_mask.reshape(batch_size, n_patches),
+                )
+            else:
+                return segmented_images, mask.reshape(batch_size, n_patches)
 
-    def create_patches(self, inputs):
+    def create_patches(self, images):
         # sizes listed in the paper are 518 and 14
         # in practice not sure this is actually the case ?
-        pixel_values = inputs.pixel_values  # (batch, 3, 518, 518)
-        batch_size, channels, height, width = pixel_values.shape
+        batch_size, channels, height, width = images.shape
 
-        patch_size = self.backbone.config.patch_size  # DINOv2 patch size 14
+        patch_size = 14  # DINOv2 patch size 14
 
         # Calculate number of patches
         num_patches_h = height // patch_size  # 518 // 14 = 37
@@ -253,7 +282,7 @@ class OADinoPreProcessor(nn.Module):
 
         # Reshape to extract patches
         # (batch, 3, 224, 224) -> (batch, 3, 37, 14, 37, 14)
-        patches = pixel_values.reshape(
+        patches = images.reshape(
             batch_size, channels, num_patches_h, patch_size, num_patches_w, patch_size
         )
 
@@ -267,16 +296,18 @@ class OADinoPreProcessor(nn.Module):
 
         return patches
 
-    def get_global_features_and_patches(self, images, pca_q, pca_niter):
+    def get_global_features_and_patches(self, images, pca_q=None, pca_niter=2):
         """Create global features, divide image into patches, and mask non object related patches
         returns:
         global_features:    (batch_size, feature_size_backbone)
         object_patches:     (batch_size, n_patches, n_channels, patch_size, patch_size)
         mask:               (batch_size, n_patches)
         """
-        segmented_inputs, mask = self.segment_images(images, pca_q, pca_niter)
-        object_patches = self.create_patches(segmented_inputs)
-        global_features = self.backbone(**segmented_inputs).last_hidden_state[:, 0, :]
+        segmented_images, mask = self.segment_images(images, pca_q, pca_niter)
+        object_patches = self.create_patches(segmented_images)
+        global_features = self.backbone.forward_features(segmented_images)[
+            "x_norm_clstoken"
+        ]
 
         return global_features, object_patches, mask
 

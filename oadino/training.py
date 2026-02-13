@@ -164,12 +164,12 @@ class PreProcessedTensorStorage(Dataset):
 def get_preprocessed_data(
     dataset,
     dataset_name,
+    model_name,
     image_size,
     preprocessor,
     base_dir,
     batch_size,
 ):
-    model_name = preprocessor.backbone.config.name_or_path.replace("/", "_")
     savedir = base_dir / dataset_name / model_name
 
     if savedir.exists():
@@ -186,6 +186,7 @@ def get_preprocessed_data(
     return preprocess_and_save_dataset(
         dataloader,
         dataset_name,
+        model_name,
         image_size,
         preprocessor,
         base_dir,
@@ -195,6 +196,7 @@ def get_preprocessed_data(
 def preprocess_and_save_dataset(
     dataloader,
     dataset_name: str,
+    model_name: str,
     image_size,
     preprocessor: OADinoPreProcessor,
     base_dir: Path,
@@ -209,7 +211,6 @@ def preprocess_and_save_dataset(
         preprocessor: OADinoPreProcessor instance
         base_dir: Base directory for saving preprocessed data
     """
-    model_name = preprocessor.backbone.config.name_or_path.replace("/", "_")
     savedir = base_dir / dataset_name / model_name
     savedir.mkdir(exist_ok=True, parents=True)
 
@@ -230,10 +231,10 @@ def preprocess_and_save_dataset(
     preprocessed_tensor_storage = PreProcessedTensorStorage(
         save_dir=savedir,
         n_samples=n_samples,
-        feature_dim=preprocessor.backbone.config.hidden_size,
+        feature_dim=preprocessor.backbone.norm.normalized_shape[0],
         n_channels=3,
-        n_patches=(image_size // preprocessor.backbone.config.patch_size) ** 2,
-        patch_size=preprocessor.backbone.config.patch_size,
+        n_patches=(image_size // 14) ** 2,
+        patch_size=14,
     )
 
     print(f"Processing {n_samples} samples...")
@@ -344,6 +345,7 @@ class Trainer:
         self,
         preprocessor: OADinoPreProcessor,
         model: OADinoModel,
+        backbone_name: str,
         dataset: Dataset,
         dataset_name: str,
         test_dataset: Dataset,
@@ -354,9 +356,10 @@ class Trainer:
         self.model = model
         self.dataset = dataset
         self.test_dataset = test_dataset
+        self.backbone_name = backbone_name
         self.dset_name = dataset_name
         self.img_size = image_size
-        self.patch_size = preprocessor.backbone.config.patch_size
+        self.patch_size = 14
         self.transform = transform
 
     def train(
@@ -437,6 +440,7 @@ class Trainer:
         preprocessed_train_dataset = get_preprocessed_data(
             self.dataset,
             self.dset_name,
+            self.backbone_name,
             self.img_size,
             self.preproc,
             base_dir,
@@ -450,6 +454,7 @@ class Trainer:
         preprocessed_test_dataset = get_preprocessed_data(
             self.test_dataset,
             f"{self.dset_name}_test",
+            self.backbone_name,
             self.img_size,
             self.preproc,
             base_dir,
