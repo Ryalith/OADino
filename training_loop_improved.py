@@ -82,6 +82,6 @@ trainer = Trainer(
 )
 trainer.train(
     "/ssd2/mldata/oadino",
-    10,
-    resume_from_checkpoint="runs/CLEVR_CLEVRTex_train_4K_224_VAE64_20260213_115149/checkpoints/best_model.pt",
+    5,
+    # resume_from_checkpoint="runs/CLEVR_CLEVRTex_train_4K_224_VAE16_20260213_211210/checkpoints/best_model.pt",
 )

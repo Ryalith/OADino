@@ -86,7 +86,6 @@ class ConvVAE16(VAE):
             nn.ConvTranspose2d(
                 latent_base, 3, kernel_size=4, stride=2, padding=1
             ),  # -> (batch, 3, 16, 16)
-            nn.Sigmoid(),  # Output in [0, 1] range
         )
 
     def encode(self, x):
@@ -169,7 +168,6 @@ class ConvVAE64(VAE):
             nn.ConvTranspose2d(
                 latent_base, 3, kernel_size=4, stride=2, padding=0
             ),  # -> (batch, 1lb, 64, 64)
-            nn.Sigmoid(),  # Output in [0, 1] range
         )
 
     def encode(self, x):
