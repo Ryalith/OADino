@@ -513,7 +513,7 @@ class Trainer:
 
         # Outer progress bar for epochs
         epoch_pbar = tqdm(
-            range(start_epoch, num_epochs),
+            range(start_epoch, num_epochs+start_epoch),
             desc="Epochs",
             position=0,
             leave=True,
