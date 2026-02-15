@@ -19,7 +19,7 @@ Visualisation of the post processing (reconstruction of the object patches from 
 
 ## Evaluation
 
-Evaluation metrics (top-10 precision with without ablation) and visualizations (top-8 retrievals on CLEVR and CLEVRTex) can be found in `final_evaluation.ipynb`
+Evaluation metrics (top-10 precision with and without ablation) and visualizations (top-8 retrievals on CLEVR and CLEVRTex) can be found in `final_evaluation.ipynb`
 
 # References
 
