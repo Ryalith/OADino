@@ -19,6 +19,8 @@ Visualisation of the post processing (reconstruction of the object patches from 
 
 ## Evaluation
 
+Embedding space generation for a split dataset of CLEVR and CLEVRTex images can be found in `oadino/embeddings.py`
+
 Evaluation metrics (top-10 precision with and without ablation) and visualizations (top-8 retrievals on CLEVR and CLEVRTex) can be found in `final_evaluation.ipynb`
 
 # References
